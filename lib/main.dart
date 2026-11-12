@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
-import 'features/auth/presentation/screens/presentacion.dart';
+import 'features/auth/presentation/screens/preloading_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Configuración de la barra de estado y navegación del sistema
+  // Configuración de la barra de estado y navegación del sistema (Creds Light)
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
       systemNavigationBarColor: AppColors.background,
-      systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
 
@@ -26,10 +27,10 @@ class CredsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CREDS / Demo Samoa',
+      title: 'Creds',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const PresentationScreen(),
+      theme: AppTheme.lightTheme,
+      home: const PreloadingScreen(),
     );
   }
 }

@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/app_feedback.dart';
+import '../../../../core/utils/app_rem.dart';
+import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_header.dart';
+import '../../../../shared/widgets/app_link_button.dart';
+
+/// Pantalla de Permisos de Ubicación ("Location permission").
+///
+/// Réplica exacta del diseño oficial de Figma:
+/// - **Top Bar:** Botón atrás y título centrado ("LOCATION").
+/// - **Contenido Central:**
+///   - Badge circular gris con icono de pin de ubicación.
+///   - Título ("Location permission") y descripción con [AppHeader.centered].
+/// - **Acciones al pie:**
+///   - Botón principal ("Enable permissions").
+///   - Enlace secundario táctil ("Do this later").
+class LocationPermissionScreen extends StatefulWidget {
+  final VoidCallback? onEnablePermissions;
+  final VoidCallback? onDoThisLater;
+
+  const LocationPermissionScreen({
+    super.key,
+    this.onEnablePermissions,
+    this.onDoThisLater,
+  });
+
+  @override
+  State<LocationPermissionScreen> createState() =>
+      _LocationPermissionScreenState();
+}
+
+class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
+  bool _isLoading = false;
+
+  void _handleEnablePermissions() {
+    setState(() => _isLoading = true);
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (widget.onEnablePermissions != null) {
+          widget.onEnablePermissions!();
+        } else {
+          AppFeedback.showSuccess(
+            context,
+            'Permisos de ubicación habilitados',
+          );
+        }
+      }
+    });
+  }
+
+  void _handleDoThisLater() {
+    if (widget.onDoThisLater != null) {
+      widget.onDoThisLater!();
+    } else {
+      AppFeedback.show(context, 'Configuración de ubicación pospuesta');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: _buildAppBar(context),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 1.5.rem), // 24 px
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Espacio superior hacia el bloque central
+                      const Spacer(flex: 2),
+
+                      // 1. Badge circular central con icono de ubicación
+                      _buildLocationBadge(),
+
+                      SizedBox(height: 2.0.rem), // 32 px
+
+                      // 2. Encabezado centrado reutilizando AppHeader
+                      const AppHeader.centered(
+                        title: 'Location permission',
+                        description:
+                            'Enable location access for a more detailed map with\nthe best recommendations.',
+                        spacing: 12.0,
+                      ),
+
+                      // Espacio flexible inferior hacia las acciones
+                      const Spacer(flex: 3),
+
+                      // 3. Acciones inferiores
+                      _buildFooterActions(context),
+
+                      SizedBox(height: 1.0.rem), // 16 px
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Barra superior con botón atrás y título centrado "LOCATION"
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: true,
+      leading: IconButton(
+        icon: const Icon(
+          Icons.arrow_back,
+          color: AppColors.textPrimary,
+          size: 24,
+        ),
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+      title: Text(
+        'LOCATION',
+        style: GoogleFonts.poppins(
+          fontSize: 0.8125.rem, // 13 px
+          fontWeight: FontWeight.w700,
+          letterSpacing: 2.0,
+          color: AppColors.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  /// Badge circular con icono de pin de ubicación
+  Widget _buildLocationBadge() {
+    return Container(
+      width: 7.5.rem, // 120 px
+      height: 7.5.rem, // 120 px
+      decoration: const BoxDecoration(
+        color: AppColors.badgeSurface,
+        shape: BoxShape.circle,
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.location_on_outlined,
+          color: AppColors.iconSecondary,
+          size: 36,
+        ),
+      ),
+    );
+  }
+
+  /// Botón principal "Enable permissions" y enlace "Do this later"
+  Widget _buildFooterActions(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Botón principal
+        AppButton(
+          text: 'Enable permissions',
+          variant: AppButtonVariant.primary,
+          isLoading: _isLoading,
+          onPressed: _handleEnablePermissions,
+        ),
+
+        SizedBox(height: 0.5.rem),
+
+        // Enlace secundario "Do this later" estandarizado
+        AppLinkButton(
+          text: 'Do this later',
+          onPressed: _handleDoThisLater,
+        ),
+      ],
+    );
+  }
+}
+

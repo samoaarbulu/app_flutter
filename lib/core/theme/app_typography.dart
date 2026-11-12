@@ -3,85 +3,92 @@ import 'package:google_fonts/google_fonts.dart';
 import '../utils/app_rem.dart';
 import 'app_colors.dart';
 
-/// Tipografía dinámica del Design System.
+/// Tipografía dinámica del Design System (Creds).
 ///
-/// REGLA CRÍTICA: Se emplean getters dinámicos en lugar de constantes estáticas
-/// para garantizar compatibilidad con Hot Reload y resolución en runtime de GoogleFonts.
+/// Implementado con getters dinámicos para garantizar compatibilidad total
+/// con Hot Reload y resolución en tiempo de ejecución de Google Fonts (Poppins).
 abstract final class AppTypography {
   static const String fontFamily = 'Poppins';
 
-  /// Título grande (39px Bold)
+  /// Marca superior ("Creds")
+  static TextStyle get brandTitle => GoogleFonts.poppins(
+    fontSize: 1.625.rem, // 26 px
+    fontWeight: FontWeight.w800,
+    color: AppColors.textPrimary,
+    letterSpacing: -0.5,
+  );
+
+  /// Título principal ("Find your place. Compare it your way.")
   static TextStyle get headlineLarge => GoogleFonts.poppins(
-    fontSize: 2.4375.rem, // 39 px
-    fontWeight: FontWeight.w700,
-    color: AppColors.textLight,
-    height: 1.15,
-  );
-
-  /// Título mediano (28px Bold)
-  static TextStyle get headlineMedium => GoogleFonts.poppins(
-    fontSize: 1.75.rem, // 28 px
-    fontWeight: FontWeight.w700,
-    color: AppColors.textLight,
+    fontSize: 2.0.rem, // 32 px
+    fontWeight: FontWeight.w800,
+    color: AppColors.textPrimary,
     height: 1.2,
+    letterSpacing: -0.6,
   );
 
-  /// Título pequeño / destacados (20.8px Bold)
-  static TextStyle get headlineSmall => GoogleFonts.poppins(
-    fontSize: 1.30.rem, // ~21 px
+  /// Título mediano (24px Bold)
+  static TextStyle get headlineMedium => GoogleFonts.poppins(
+    fontSize: 1.5.rem, // 24 px
     fontWeight: FontWeight.w700,
-    color: AppColors.textLight,
+    color: AppColors.textPrimary,
+    height: 1.25,
   );
 
-  /// Subtítulo descriptivo / cuerpo estándar (16px Regular)
-  static TextStyle get bodySmall => GoogleFonts.poppins(
+  /// Subtítulo descriptivo ("Save the gyms you know...")
+  static TextStyle get bodyDescription => GoogleFonts.poppins(
     fontSize: 1.0.rem, // 16 px
     fontWeight: FontWeight.w400,
-    color: AppColors.textLight.withValues(alpha: 0.85),
-    height: 1.4,
+    color: AppColors.textSecondary,
+    height: 1.45,
   );
 
-  /// Texto de cuerpo estándar (16px Medium)
+  /// Texto de cuerpo estándar (16px Regular)
   static TextStyle get bodyMedium => GoogleFonts.poppins(
     fontSize: 1.0.rem, // 16 px
-    fontWeight: FontWeight.w500,
-    color: AppColors.textLight,
-  );
-
-  /// Texto de cuerpo grande (18px Regular)
-  static TextStyle get bodyLarge => GoogleFonts.poppins(
-    fontSize: 1.125.rem, // 18 px
     fontWeight: FontWeight.w400,
-    color: AppColors.textLight,
+    color: AppColors.textPrimary,
   );
 
-  /// Texto de botones de acción
+  /// Texto de botones de acción ("Get started")
   static TextStyle get button => GoogleFonts.poppins(
-    fontSize: 1.0.rem,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 1.0,
+    fontSize: 1.0.rem, // 16 px
+    fontWeight: FontWeight.w600,
     color: AppColors.onPrimary,
+    letterSpacing: 0.2,
   );
 
-  /// Texto de campos de entrada (Inputs)
+  /// Texto de pie / enlaces de navegación ("Already have an account? Sign in")
+  static TextStyle get linkNormal => GoogleFonts.poppins(
+    fontSize: 0.875.rem, // 14 px
+    fontWeight: FontWeight.w400,
+    color: AppColors.textPrimary,
+  );
+
+  static TextStyle get linkBold => GoogleFonts.poppins(
+    fontSize: 0.875.rem, // 14 px
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
+  /// Campos de entrada (Inputs)
   static TextStyle get input => GoogleFonts.poppins(
     fontSize: 1.0.rem,
     fontWeight: FontWeight.w400,
-    color: AppColors.textLight,
+    color: AppColors.textPrimary,
   );
 
-  /// Texto de placeholder / sugerencia en inputs
+  /// Placeholder en inputs
   static TextStyle get inputHint => GoogleFonts.poppins(
     fontSize: 1.0.rem,
     fontWeight: FontWeight.w400,
     color: AppColors.textMuted,
   );
 
-  /// Etiquetas secundarias / tags / texto de ayuda
+  /// Etiquetas auxiliares / captions
   static TextStyle get caption => GoogleFonts.poppins(
     fontSize: 0.75.rem, // 12 px
     fontWeight: FontWeight.w400,
-    color: AppColors.textMuted,
+    color: AppColors.textSecondary,
   );
 }
-

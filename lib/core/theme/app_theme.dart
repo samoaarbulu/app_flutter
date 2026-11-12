@@ -3,20 +3,20 @@ import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
 
-/// Configuración centralizada de temas de la aplicación (Material 3).
+/// Configuración centralizada de temas de Creds (Material 3).
 abstract final class AppTheme {
-  /// Tema oscuro oficial del proyecto
-  static ThemeData get darkTheme {
+  /// Tema claro oficial de la aplicación
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: const ColorScheme.light(
         surface: AppColors.background,
         primary: AppColors.primaryAction,
-        secondary: AppColors.textMuted,
+        secondary: AppColors.textSecondary,
         onPrimary: AppColors.onPrimary,
-        onSurface: AppColors.textLight,
+        onSurface: AppColors.textPrimary,
       ),
       fontFamily: AppTypography.fontFamily,
       appBarTheme: const AppBarTheme(
@@ -25,21 +25,36 @@ abstract final class AppTheme {
         centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark,
           systemNavigationBarColor: AppColors.background,
-          systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarIconBrightness: Brightness.dark,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryAction,
-          foregroundColor: AppColors.background,
+          foregroundColor: AppColors.onPrimary,
           elevation: 0,
-          shape: const StadiumBorder(),
+          minimumSize: const Size.fromHeight(56.0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
           textStyle: AppTypography.button,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.primaryAction,
+        behavior: SnackBarBehavior.floating,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14.0),
+        ),
+        contentTextStyle: AppTypography.button.copyWith(
+          color: AppColors.onPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 }
-
