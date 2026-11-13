@@ -31,7 +31,7 @@ class PresentationScreen extends StatefulWidget {
     super.key,
     this.onGetStarted,
     this.onSignIn,
-    this.showBrandTitle = false, //treu para mosotar logo por etxto
+    this.showBrandTitle = false, //true para mostrar logo por etxto
   });
 
   @override
@@ -193,8 +193,7 @@ class _PresentationScreenState extends State<PresentationScreen>
   Widget _buildEncabezado() {
     return const AppHeader.centered(
       title: 'Find your place.\nCompare it your way.',
-      description:
-          'Save the gyms you know, compare your experience\nand discover your favorites.',
+      description: 'Save the gyms you know, compare your experience\nand discover your favorites.',
     );
   }
 
@@ -206,12 +205,11 @@ class _PresentationScreenState extends State<PresentationScreen>
         // Acción principal: Botón global "Get started"
         AppButton(
           text: 'Get started',
-          onPressed: widget.onGetStarted ??
+          onPressed:
+              widget.onGetStarted ??
               () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AuthLandingScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
                 );
               },
         ),
