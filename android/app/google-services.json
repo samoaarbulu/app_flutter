@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "99373295102",
+    "project_id": "getcreds-dev",
+    "storage_bucket": "getcreds-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99373295102:android:9bc4b8d3c51ef25eac0caf",
+        "android_client_info": {
+          "package_name": "com.getcreds.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "99373295102-a5ttjjtdo098s3fluo0hh27fl9d28bp8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzGxPmBGyEaiwpaSwvQ_PTYOV5A-Cs_94"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "99373295102-a5ttjjtdo098s3fluo0hh27fl9d28bp8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "99373295102-e71nql0cgtvghgm2imj1jvu4blptaf3d.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.appFlutter"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

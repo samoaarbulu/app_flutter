@@ -1,6 +1,6 @@
-# 📚 Documentación Técnica y Guía de Replicación — Demo Samoa
+# 📚 Documentación Técnica y Guía de Arquitectura — Creds (Flutter)
 
-Bienvenido a la documentación oficial de la aplicación **Demo Samoa**. Este conjunto de guías técnicas está diseñado bajo el formato de **Cookbooks / Runbooks** paso a paso: cada documento contiene explicaciones de arquitectura, configuraciones nativas y código listo para copiar, pegar y adaptar en cualquier otro proyecto Flutter.
+Bienvenido a la documentación técnica oficial de **Creds**. Este repositorio contiene una arquitectura modular basada en **Feature-First**, Clean Code, un Design System pixel-perfect extraído de Figma y una integración multi-entorno robusta para **Firebase Authentication con Google Sign-In**.
 
 ---
 
@@ -8,30 +8,39 @@ Bienvenido a la documentación oficial de la aplicación **Demo Samoa**. Este co
 
 1. [**01. Arquitectura, Estructura y Design System**](01_arquitectura_y_estructura.md)
    - Filosofía Feature-First y Clean Code.
-   - Patrón de **Componentes Modulares** (estilo Vue/Angular `<template>`).
-   - Sistema de Diseño: Unidades relativas **REM**, paleta de colores y tipografía dinámica con Google Fonts (`Poppins`).
-   - Componentes compartidos reutilizables (`lib/shared/widgets/`).
+   - Patrón de Componentes Modulares (separación lógica `<script>` y vista `<template>`).
+   - Sistema de Diseño: Unidades relativas **REM** (`1.0.rem = 16.0 px`), paleta de colores oficial (`AppColors`) y tipografía dinámica con `GoogleFonts.poppins` (`AppTypography`).
+   - Catálogo de componentes compartidos en `lib/shared/widgets/` (`AppButton`, `AppHeader`, `AppTextField`, `AppOtpSection`, `AppLinkButton`, etc.).
 
-2. [**02. Autenticación y Google Sign-In Multiplataforma**](02_autenticacion_google_signin.md)
-   - Integración con Firebase Authentication y Google Sign-In.
-   - **Solución Multiplataforma:** Diferencias críticas entre Web (`signInWithPopup`) y Móvil (`GoogleSignIn`).
-   - Código del servicio singleton `AuthService`.
-   - Flujo de pantallas: Splash automático de 2 segundos, `AuthLandingScreen` y `LoginScreen`.
+2. [**02. Autenticación, Google Sign-In y Multi-Entornos (DEV / PROD)**](02_autenticacion_google_signin.md)
+   - Integración con Firebase Authentication y Google Sign-In multiplataforma (Web vs Android vs iOS).
+   - Servicio singleton `AuthService` y el inicializador resiliente `FirebaseInitializer`.
+   - **Estrategia Multi-Entorno (Opción B):** Sufijo `.dev` automático en desarrollo (`com.getcreds.app.dev`) y nombre limpio en producción (`com.getcreds.app`), permitiendo tener ambas versiones instaladas a la vez.
+   - Sincronización con `getcreds-dev` y `getcreds-prod`.
 
 3. [**03. Mapbox Maps SDK v11, Geolocalización y Marcadores**](03_mapbox_y_geolocalizacion.md)
-   - Requisitos de cuenta: Token Público (`pk...`) vs Token Secreto de descarga (`sk...` con `Downloads:Read`).
-   - Configuración nativa de Android (Gradle, Maven autenticado y solución para AGP 9+ con Kotlin).
+   - Requisitos de cuenta: Token Público vs Token Secreto de descarga (`sk...`).
+   - Configuración nativa de Android (Gradle, Maven autenticado).
    - Permisos y servicio de ubicación GPS con `geolocator`.
-   - Implementación de `MapWidget` con tema oscuro.
-   - Pintado de pines vectoriales con `PointAnnotationManager` y despliegue de tarjeta flotante inferior al hacer clic.
+   - Renderizado de mapas vectoriales y selección de lugares.
 
 4. [**04. Laboratorio de Animaciones de Marca y Preloaders**](04_laboratorio_animaciones_branding.md)
-   - Prototipado interactivo de micro-interacciones de marca (`presentacion.dart`).
-   - **Opción 1 (Prisma):** Barrido especular con `ShaderMask`, `BlendMode.srcATop` y pausa orgánica de 1.3s.
-   - **Opción 2 (CREDS):** Gema 3D cojín translúcida en GPU con `CustomPainter`, borde neón y tipografía cinética horizontal `C R E D S`.
-   - **Opción 3 (3D Float):** Levitación vertical con sombra física dinámica en el suelo.
-   - **Opción 4 (Emblema):** Giro 3D en perspectiva de 360° en eje Y.
-   - Selector modular interactivo con respuesta háptica nativa.
+   - Documentación técnica de las 4 opciones de micro-interacciones de marca:
+     - Opción 1: Prisma (Barrido especular con `ShaderMask`).
+     - Opción 2: CREDS (Gema translúcida y tipografía cinética).
+     - Opción 3: **3D Float** (Levitación vertical y sombra física dinámica en el suelo).
+     - Opción 4: Emblema (Giro 3D en perspectiva).
+
+5. [**05. Pantallas y Flujo Completo de Onboarding**](05_pantallas_y_flujo_onboarding.md)
+   - Especificación detallada de las 8 pantallas construidas:
+     1. `PreloadingScreen`: Animación 3D Float del wordmark `creds` en escala de grises.
+     2. `PresentationScreen`: Video en bucle de fondo con gradiente y CTA "Get started".
+     3. `AuthLandingScreen`: "Build your Creds", Google, Apple y Email.
+     4. `CreateAccountScreen`: Formulario con validación de contraseña.
+     5. `VerifyEmailScreen`: Verificación OTP con `AppOtpSection` (6 casillas, temporizador y aviso).
+     6. `AddPhotoScreen`: Selector circular de foto de perfil.
+     7. `SetupProfileScreen`: Configuración de Username, teléfono y nombre completo.
+     8. `LocationPermissionScreen`: Permiso de ubicación con badge circular.
 
 ---
 
@@ -41,52 +50,26 @@ Bienvenido a la documentación oficial de la aplicación **Demo Samoa**. Este co
 | :--- | :--- | :--- |
 | **Flutter SDK** | `>= 3.27.0` | Canal Stable |
 | **Dart SDK** | `>= 3.6.0` | Null-Safety activado |
-| **JDK (Java)** | `OpenJDK 17` a `25` | Incluido en Android Studio (`.../jbr`) |
-| **Android Gradle Plugin (AGP)** | `9.1.0` | Compatible con Gradle 9.x |
-| **Min Android SDK** | `21` (Android 5.0) | Requerido por Mapbox v11 |
+| **JDK (Java)** | `OpenJDK 17` a `21` | Compatible con Gradle 9 y Kotlin 2.x |
+| **Firebase CLI** | Última versión | `firebase login` con cuenta autorizada |
+| **FlutterFire CLI** | `flutterfire` | Activado globalmente con `dart pub global activate flutterfire_cli` |
 
 ---
 
-## 📦 Cómo Replicar en un Nuevo Proyecto (Paso a Paso)
+## 🚀 Comandos Rápidos
 
-Si vas a iniciar otro proyecto y deseas trasladar todo lo aprendido aquí:
+```powershell
+# Instalar dependencias
+flutter pub get
 
-### Paso 1: Crear el proyecto Flutter limpio
-Abre la terminal en la carpeta donde crearás el nuevo proyecto:
-```bash
-flutter create --org com.tudominio --platforms=android,ios nombre_de_tu_app
-cd nombre_de_tu_app
+# Ejecutar en Desarrollo (getcreds-dev)
+flutter run
+
+# Ejecutar o compilar apuntando a Producción (getcreds-prod)
+flutter run --dart-define=ENV=prod
+flutter build appbundle --dart-define=ENV=prod
+
+# Ejecutar pruebas automatizadas y análisis de calidad
+flutter test
+flutter analyze
 ```
-
-### Paso 2: Copiar las carpetas clave
-Copia desde este proyecto al nuevo proyecto:
-1. **La carpeta `docs/`:** Para que el agente o cualquier desarrollador tenga la referencia arquitectónica completa.
-2. **La carpeta `assets/images/`:** Copia el logotipo (`logo.png`) o coloca el nuevo logotipo en esa ruta.
-
-### Paso 3: Configurar `pubspec.yaml`
-Añade las dependencias base en `pubspec.yaml`:
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  google_fonts: ^6.2.1
-  firebase_core: ^3.12.1
-  firebase_auth: ^5.5.1
-  google_sign_in: ^6.2.2
-  mapbox_maps_flutter: ^2.6.0
-  geolocator: ^13.0.2
-
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/images/
-```
-
-### Paso 4: Configurar Credenciales Específicas
-1. **Firebase:** Ejecuta en la terminal `flutterfire configure` para vincular tu nuevo proyecto de Firebase y generar `lib/firebase_options.dart`.
-2. **Mapbox:** Coloca tu token público en `lib/core/config/mapbox_config.dart` y tu token secreto `sk...` en `~/.gradle/gradle.properties`.
-
-### Paso 5: Prompt para el Agente de IA en el Nuevo Proyecto
-Copia y pega este prompt al asistente de IA en el nuevo proyecto:
-
-> *"He creado este proyecto con `flutter create --platforms=android,ios`. En la carpeta `docs/` tienes la documentación técnica completa del proyecto base anterior. Léela toda y replica la arquitectura de carpetas (`lib/core/`, `lib/features/`, `lib/shared/`), el Design System (AppColors, AppTypography dinámica y la extensión de unidades REM `app_rem.dart`), los componentes base reutilizables y la pantalla de presentación modular con las animaciones de marca."*

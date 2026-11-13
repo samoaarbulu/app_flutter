@@ -1,168 +1,167 @@
-# 🔐 02. Autenticación y Google Sign-In Multiplataforma
+# 🔐 02. Autenticación, Google Sign-In y Multi-Entornos (DEV / PROD)
 
-Esta guía detalla la implementación completa de **Firebase Authentication** y **Google Sign-In** para aplicaciones Flutter, incluyendo la solución técnica definitiva para soportar tanto **Web (Chrome)** como **Móvil (Android / iOS)** sin errores de configuración.
-
----
-
-## 1. Requisitos Previos en Firebase
-
-1. **Crear proyecto:** Entrar a [console.firebase.google.com](https://console.firebase.google.com/) y crear un nuevo proyecto.
-2. **Habilitar el proveedor de Google:**
-   - Ir a **Authentication** > pestaña **Sign-in method**.
-   - Seleccionar **Google** > habilitar el interruptor y seleccionar el correo de soporte.
-   - Guardar.
-3. **Configurar FlutterFire CLI:**
-   ```bash
-   dart pub global activate flutterfire_cli
-   flutterfire configure
-   ```
-   Esto genera automáticamente el archivo `lib/firebase_options.dart` con las credenciales para Web, Android e iOS.
+Este documento detalla la integración completa de **Firebase Authentication**, **Google Sign-In** y la arquitectura de **Multi-Entornos (DEV / PROD)** implementada en **Creds**.
 
 ---
 
-## 2. Dependencias en `pubspec.yaml`
+## 1. Arquitectura Multi-Entorno (Opción B)
 
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  firebase_core: ^3.12.1
-  firebase_auth: ^5.5.1
-  google_sign_in: ^6.2.2
+Para evitar colisiones entre datos de prueba y datos de producción, el proyecto maneja dos entornos totalmente aislados:
+
+| Parámetro | Desarrollo (DEV) | Producción (PROD) |
+| :--- | :--- | :--- |
+| **Nombre del proyecto** | `creds-dev` | `creds-prod` |
+| **ID del proyecto Firebase** | `getcreds-dev` | `getcreds-prod` |
+| **Package Name Android** | `com.getcreds.app.dev` | `com.getcreds.app` |
+| **Etiqueta en el celular** | `Creds (Dev)` | `Creds` |
+| **Archivo de opciones Dart** | `lib/firebase_options_dev.dart` | `lib/firebase_options_prod.dart` |
+
+### A. Configuración automática en Android (`android/app/build.gradle.kts`)
+El sufijo `.dev` se aplica de forma automática en desarrollo mediante Gradle:
+
+```kotlin
+defaultConfig {
+    applicationId = "com.getcreds.app" // ID base de Producción
+}
+
+buildTypes {
+    debug {
+        // En desarrollo, añade .dev automáticamente:
+        applicationIdSuffix = ".dev"
+        manifestPlaceholders["appLabel"] = "Creds (Dev)"
+    }
+    release {
+        // En producción, compila sin sufijo (com.getcreds.app):
+        manifestPlaceholders["appLabel"] = "Creds"
+    }
+}
 ```
 
-Ejecutar en la terminal:
-```bash
-flutter pub get
-```
-
----
-
-## 3. Inicialización en `lib/main.dart`
-
-Antes de correr cualquier widget, Firebase debe inicializarse de forma asíncrona:
-
+### B. Selector de Entorno en Dart (`lib/core/config/app_config.dart`)
 ```dart
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+enum Environment { dev, prod }
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+abstract final class AppConfig {
+  static const String _env = String.fromEnvironment('ENV', defaultValue: 'dev');
 
-  runApp(const MyApp());
+  static Environment get environment =>
+      _env.toLowerCase() == 'prod' ? Environment.prod : Environment.dev;
+
+  static bool get isProd => environment == Environment.prod;
+  static bool get isDev => environment == Environment.dev;
+
+  static String get projectId => isProd ? 'getcreds-prod' : 'getcreds-dev';
+}
+```
+
+### C. Inicializador Resiliente (`lib/core/services/firebase_initializer.dart`)
+```dart
+abstract final class FirebaseInitializer {
+  static Future<void> initialize() async {
+    try {
+      await Firebase.initializeApp(
+        options: dev_options.DefaultFirebaseOptions.currentPlatform,
+      );
+      debugPrint('✅ Firebase inicializado con éxito (getcreds-dev)');
+    } catch (e) {
+      debugPrint('ℹ️ Error al inicializar Firebase: $e');
+    }
+  }
 }
 ```
 
 ---
 
-## 4. El "Secreto" Multiplataforma (Web vs Móvil)
+## 2. El "Secreto" Multiplataforma (Web vs Móvil)
 
 > [!WARNING]
-> **Error común:** En Flutter Web, usar `GoogleSignIn().signIn()` provoca el error:
-> `Assertion failed: appClientId != null "ClientID not set. Either set it on a <meta name='google-signin-client_id' ..."`
-> 
-> **La Solución Oficial de Firebase:**
-> - En **Web (`kIsWeb`)**: Se debe usar **`FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider())`**. Esta función utiliza la configuración web de Firebase (`authDomain`), desplegando la ventana emergente oficial de Google sin requerir etiquetas meta adicionales en `index.html`.
-> - En **Móvil (Android/iOS)**: Se utiliza el flujo nativo con **`GoogleSignIn().signIn()`** para obtener los tokens OAuth (`accessToken` e `idToken`).
+> En Flutter Web, llamar directamente a `GoogleSignIn().signIn()` genera el error `Assertion failed: appClientId != null`. 
+
+**La solución oficial implementada en `AuthService`:**
+* En **Web (`kIsWeb`)**: Se utiliza **`FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider())`**. Esto levanta la ventana emergente oficial de Google utilizando el `authDomain` de Firebase sin requerir Client IDs estáticos en `index.html`.
+* En **Móvil (Android / iOS)**: Se utiliza el selector nativo con **`GoogleSignIn().signIn()`** para obtener las credenciales OAuth (`accessToken` e `idToken`) y luego canjearlas en Firebase con `signInWithCredential`.
 
 ---
 
-## 5. Implementación del Servicio: `AuthService`
-
-Copia este archivo en `lib/features/auth/services/auth_service.dart`:
+## 3. Implementación del Servicio (`lib/features/auth/services/auth_service.dart`)
 
 ```dart
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-
-/// Servicio singleton de autenticación con soporte Web y Móvil.
 class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseAuth? get _auth => Firebase.apps.isNotEmpty ? FirebaseAuth.instance : null;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  /// Usuario actualmente autenticado
-  User? get currentUser => _auth.currentUser;
+  User? get currentUser => _auth?.currentUser;
+  Stream<User?> get authStateChanges => _auth?.authStateChanges() ?? const Stream.empty();
 
-  /// Stream para escuchar cambios en la sesión
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  /// Inicio de sesión unificado con Google
   Future<UserCredential?> signInWithGoogle() async {
+    if (Firebase.apps.isEmpty) {
+      throw FirebaseException(plugin: 'firebase_auth', message: 'Firebase no inicializado');
+    }
+
     try {
-      // 1. En Web: Flujo de Popup oficial de Firebase
       if (kIsWeb) {
         final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-        return await _auth.signInWithPopup(googleProvider);
+        return await _auth!.signInWithPopup(googleProvider);
       }
 
-      // 2. En Móvil: Flujo nativo interactivo
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        return null; // El usuario canceló la selección de cuenta
-      }
+      if (googleUser == null) return null; // Cancelado por el usuario
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      return await _auth.signInWithCredential(credential);
+      return await _auth!.signInWithCredential(credential);
     } catch (e) {
       debugPrint('Error en signInWithGoogle: $e');
       rethrow;
     }
   }
 
-  /// Cierre de sesión en Firebase y en Google
   Future<void> signOut() async {
-    if (!kIsWeb) {
-      await _googleSignIn.signOut();
-    }
-    await _auth.signOut();
+    if (!kIsWeb) await _googleSignIn.signOut();
+    await _auth?.signOut();
   }
 }
 ```
 
 ---
 
-## 6. Flujo de Pantallas de Autenticación
+## 4. Comandos de Configuración con FlutterFire CLI
 
-El proyecto implementa un flujo en 3 etapas:
+### Para Desarrollo (`getcreds-dev`):
+```powershell
+flutterfire configure --project=getcreds-dev --out=lib/firebase_options_dev.dart
+```
 
-1. **`PresentationScreen` ([presentacion.dart](file:///c:/Users/Chuwi%20PC/Documents/Proyectos%20Flutter/demo-samoa/lib/features/auth/presentation/screens/presentacion.dart)):**
-   - Pantalla de presentación / splash con el logotipo centrado.
-   - Contiene un `Timer` automático de **2 segundos** en `initState()` que redirige a `AuthLandingScreen` sin requerir toques manuales.
+### Para Producción (`getcreds-prod`):
+```powershell
+flutterfire configure --project=getcreds-prod --out=lib/firebase_options_prod.dart
+```
 
-2. **`AuthLandingScreen` ([auth_landing.dart](file:///c:/Users/Chuwi%20PC/Documents/Proyectos%20Flutter/demo-samoa/lib/features/auth/presentation/screens/auth_landing.dart)):**
-   - Muestra el encabezado centrado y tres botones de acción estilo píldora (56px de alto):
-     - **`login with Google`**: Invoca `AuthService.instance.signInWithGoogle()`. Muestra un spinner circular mientras autentica y redirige a `HomeScreen` al terminar con éxito. Incluye el isotipo vectorial oficial de Google en blanco puro (`_GoogleWhiteIcon`).
-     - **`Sign in with Apple`**: Opción social secundaria con `Icons.apple`.
-     - **`Sign up with email`**: Botón primario en color `#A3C7D6` que abre la pantalla de login tradicional.
-     - **`Already have an account? Sign in`**: Enlace al pie que también conduce a la pantalla de login.
-
-3. **`LoginScreen` ([login.dart](file:///c:/Users/Chuwi%20PC/Documents/Proyectos%20Flutter/demo-samoa/lib/features/auth/presentation/screens/login.dart)):**
-   - Formulario tradicional con inputs para email, contraseña con visibilidad alternable y botón de acción.
+### Compilar para Producción:
+```powershell
+flutter build appbundle --dart-define=ENV=prod
+```
 
 ---
 
-## 7. Checklist para Replicar en un Proyecto Nuevo
+## 5. Datos de Perfil Obtenidos y Políticas de Privacidad
 
-- [ ] Instalar `firebase_core`, `firebase_auth` y `google_sign_in`.
-- [ ] Ejecutar `flutterfire configure`.
-- [ ] Habilitar proveedor Google en Firebase Console.
-- [ ] En Android: Agregar la huella digital **SHA-1** en la configuración de la app en Firebase Console (obtenida con `./gradlew signingReport`).
-- [ ] Copiar `lib/features/auth/services/auth_service.dart`.
-- [ ] Inicializar Firebase en `main.dart`.
+Tras una autenticación exitosa con Google, el objeto `credential.user` provee los siguientes datos que son consumidos automáticamente por las pantallas de onboarding:
+
+| Dato de Google | Propiedad Firebase | Uso en el Onboarding de Creds |
+| :--- | :--- | :--- |
+| **Foto de perfil** | `user.photoURL` | Se muestra en `AddPhotoScreen` en alta definición (`=s400-c`). |
+| **Nombre completo** | `user.displayName` | Se divide en primer nombre y apellidos en `SetupProfileScreen`. |
+| **Correo electrónico**| `user.email` | Se extrae el identificador previo al `@` para sugerir el `Username`. |
+| **Número de teléfono**| `user.phoneNumber` | **Siempre retorna `null`**. Google nunca comparte el teléfono a través de OAuth estándar por políticas de privacidad; por ello la pantalla `SetupProfileScreen` lo solicita con el campo vacío y texto guía. |
+
+### Manejo de CORS para la Foto de Google en Flutter Web:
+En entornos de navegador (como Chrome en desarrollo), el motor CanvasKit bloquea peticiones de imágenes directas a `lh3.googleusercontent.com`. El proyecto implementa la función `_resolvePhotoUrl` en `AddPhotoScreen` que aplica un proxy transparente con cabeceras CORS en Web (`kIsWeb`), mientras que en Android/iOS consume la URL nativa directamente.
 

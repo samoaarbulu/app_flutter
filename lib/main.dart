@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'core/services/firebase_initializer.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/screens/preloading_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await FirebaseInitializer.initialize();
 
   // Configuración de la barra de estado y navegación del sistema (Creds Light)
   SystemChrome.setSystemUIOverlayStyle(

@@ -8,6 +8,8 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_google_icon.dart';
 import '../../../../shared/widgets/app_header.dart';
 import '../../../../shared/widgets/app_link_text.dart';
+import '../../services/auth_service.dart';
+import 'add_photo_screen.dart';
 import 'create_account_screen.dart';
 
 /// Pantalla de Selección de Método de Autenticación ("Build your Creds").
@@ -16,7 +18,8 @@ import 'create_account_screen.dart';
 /// - **Top Bar:** Botón atrás y título centrado en mayúsculas ("ACCOUNT").
 /// - **Encabezado:** Título alineado a la izquierda ("Build your Creds") y texto descriptivo.
 /// - **Acciones:** 3 botones con borde (Google, Apple y Email) usando el componente global `AppButton`.
-class AuthLandingScreen extends StatelessWidget {
+/// - **Autenticación con Google:** Integración nativa/web con `AuthService.instance.signInWithGoogle()`.
+class AuthLandingScreen extends StatefulWidget {
   final VoidCallback? onGoogleSignIn;
   final VoidCallback? onAppleSignIn;
   final VoidCallback? onEmailSignIn;
@@ -29,6 +32,47 @@ class AuthLandingScreen extends StatelessWidget {
     this.onEmailSignIn,
     this.onSignIn,
   });
+
+  @override
+  State<AuthLandingScreen> createState() => _AuthLandingScreenState();
+}
+
+class _AuthLandingScreenState extends State<AuthLandingScreen> {
+  bool _isGoogleLoading = false;
+
+  Future<void> _handleGoogleSignIn() async {
+    if (widget.onGoogleSignIn != null) {
+      widget.onGoogleSignIn!();
+      return;
+    }
+
+    setState(() => _isGoogleLoading = true);
+
+    try {
+      final credential = await AuthService.instance.signInWithGoogle();
+      if (!mounted) return;
+
+      if (credential != null && credential.user != null) {
+        final userName = credential.user!.displayName ?? 'Usuario';
+        AppFeedback.showSuccess(context, '¡Bienvenido $userName!');
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const AddPhotoScreen(),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      AppFeedback.showError(
+        context,
+        'Error al iniciar sesión con Google: $e',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +93,7 @@ class AuthLandingScreen extends StatelessWidget {
               _buildHeader(),
 
               SizedBox(height: 2.5.rem), // 40 px
+
               // -------------------------------------------------------------
               // 2. OPCIONES DE AUTENTICACIÓN (Botones con borde e iconos)
               // -------------------------------------------------------------
@@ -61,15 +106,19 @@ class AuthLandingScreen extends StatelessWidget {
               // -------------------------------------------------------------
               Center(
                 child: AppLinkText(
-                  prefixText: 'Already have an account? ',
+                  prefixText: 'Already have an account?',
                   actionText: 'Sign in',
-                  onTap:
-                      onSignIn ??
-                      () => AppFeedback.show(context, 'Sign in presionado'),
+                  onTap: () {
+                    if (widget.onSignIn != null) {
+                      widget.onSignIn!();
+                    } else {
+                      AppFeedback.show(context, 'Pantalla de Sign in próximamente');
+                    }
+                  },
                 ),
               ),
 
-              SizedBox(height: 1.0.rem),
+              SizedBox(height: 1.0.rem), // 16 px
             ],
           ),
         ),
@@ -116,30 +165,29 @@ class AuthLandingScreen extends StatelessWidget {
   Widget _buildAuthOptions(BuildContext context) {
     return Column(
       children: [
-        // 1. Botón Google
+        // 1. Botón Google con llamada directa a AuthService
         AppButton(
           text: 'Continue with Google',
           variant: AppButtonVariant.outline,
+          isLoading: _isGoogleLoading,
           icon: const AppGoogleIcon(size: 20),
-          onPressed:
-              onGoogleSignIn ??
-              () =>
-                  AppFeedback.show(context, 'Continue with Google presionado'),
+          onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
         ),
 
         SizedBox(height: 1.0.rem), // 16 px
+
         // 2. Botón Apple
         AppButton(
           text: 'Continue with Apple',
           variant: AppButtonVariant.outline,
           icon: const Icon(Icons.apple, color: AppColors.textPrimary, size: 24),
-          onPressed:
-              onAppleSignIn ??
+          onPressed: widget.onAppleSignIn ??
               () => AppFeedback.show(context, 'Continue with Apple presionado'),
         ),
 
         SizedBox(height: 1.0.rem), // 16 px
-        // 3. Botón Email
+
+        // 3. Botón Email (conduce al flujo de Create Account)
         AppButton(
           text: 'Continue with Email',
           variant: AppButtonVariant.outline,
@@ -148,13 +196,14 @@ class AuthLandingScreen extends StatelessWidget {
             color: AppColors.textPrimary,
             size: 22,
           ),
-          onPressed:
-              onEmailSignIn ??
-          () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CreateAccountScreen()),
-            );
-          },
+          onPressed: widget.onEmailSignIn ??
+              () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const CreateAccountScreen(),
+                  ),
+                );
+              },
         ),
       ],
     );

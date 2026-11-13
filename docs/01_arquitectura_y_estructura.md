@@ -1,32 +1,29 @@
 # 🏗️ 01. Arquitectura, Estructura y Design System
 
-Este documento explica los principios de ingeniería de software, la organización de carpetas y el sistema de diseño utilizados en este proyecto para garantizar alta mantenibilidad, escalabilidad y legibilidad.
+Este documento detalla los principios de ingeniería de software, la organización de carpetas y el sistema de diseño visual implementados en **Creds**.
 
 ---
 
 ## 1. Filosofía de Arquitectura (Feature-First)
 
-El proyecto utiliza una arquitectura **Feature-First** (por funcionalidades) combinada con principios de **Clean Code**. Cada funcionalidad vive en su propio módulo autocontenido:
+El proyecto utiliza una arquitectura **Feature-First** (modular por funcionalidades) combinada con principios de **Clean Code**. Cada funcionalidad vive en su propio módulo autocontenido:
 
 ```text
 lib/
 ├── core/                         # Núcleo compartido global (no depende de features)
-│   ├── config/                   # Configuraciones globales (Mapbox, APIs)
-│   ├── services/                 # Servicios globales del sistema (GPS, Ubicación)
-│   ├── theme/                    # Design System (Colores, Espaciados, Tipografías)
-│   └── utils/                    # Extensiones y utilidades (AppRem)
+│   ├── config/                   # Configuración de entornos dev/prod (AppConfig)
+│   ├── services/                 # Servicios globales (FirebaseInitializer)
+│   ├── theme/                    # Design System (AppColors, AppTypography, AppTheme)
+│   └── utils/                    # Extensiones y utilidades (AppRem, AppFeedback)
 ├── features/                     # Módulos de funcionalidad de negocio
-│   ├── auth/                     # Autenticación (Login, Registro, Bienvenida, AuthService)
-│   │   ├── presentation/screens/ # Pantallas modulares
-│   │   └── services/             # Servicios específicos de autenticación
-│   ├── gyms/                     # Gimnasios y Mapas
-│   │   ├── data/                 # Modelos y fuentes de datos locales
-│   │   └── presentation/screens/ # Pantalla de mapa y widgets interactivos
-│   └── home/                     # Pantalla principal y detalle de restaurante
-│       └── presentation/screens/ # Dashboard y Detalle
-├── shared/                       # Componentes visuales reutilizables entre features
-│   └── widgets/                  # Botones globales, inputs, logos, etiquetas
-├── firebase_options.dart         # Opciones generadas por FlutterFire CLI
+│   ├── auth/                     # Autenticación y Onboarding
+│   │   ├── presentation/screens/ # Preloading, Bienvenida, Landing, Registro, OTP, Perfil, Permisos
+│   │   └── services/             # AuthService (Google Sign-In)
+│   ├── gyms/                     # Módulo de gimnasios y recomendaciones (en construcción)
+│   └── home/                     # Módulo principal / feeds (en construcción)
+├── shared/                       # Componentes visuales reutilizables en toda la aplicación
+│   └── widgets/                  # AppButton, AppHeader, AppTextField, AppOtpSection, AppLinkButton, etc.
+├── firebase_options_dev.dart     # Configuración oficial de Firebase para Desarrollo
 └── main.dart                     # Punto de entrada de la aplicación
 ```
 
@@ -34,131 +31,149 @@ lib/
 
 ## 2. Patrón de "Componentes Modulares" (Estilo Vue/Angular)
 
-Para evitar el problema común en Flutter del *"Widget Hell"* (árboles de widgets con 20 niveles de anidación imposibles de leer), cada pantalla se estructura emulando la separación de `<script>` y `<template>` de frameworks modernos como Vue o Angular:
+Para mantener la legibilidad y evitar árboles de widgets anidados (*Widget Hell*), cada pantalla se estructura dividiendo el estado, la vista principal y los subcomponentes:
 
-### Estructura de un archivo de pantalla:
 ```dart
 class MyScreen extends StatefulWidget { ... }
 
 class _MyScreenState extends State<MyScreen> {
   // -------------------------------------------------------------
-  // 1. ESTADO Y CONTROLADORES (Equivalente al <script setup>)
+  // 1. ESTADO Y CONTROLADORES (<script setup>)
   // -------------------------------------------------------------
-  int _selectedTab = 0;
-  final TextEditingController _controller = TextEditingController();
+  final _controller = TextEditingController();
+  bool _isLoading = false;
 
   void _handleSubmit() { ... }
 
   // -------------------------------------------------------------
-  // 2. VISTA PRINCIPAL (Equivalente al <template>)
+  // 2. VISTA PRINCIPAL (<template>)
   // -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: _buildAppBar(context),
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(),        // <-- Modular y legible a primera vista
-            _buildHeaderSection(),
-            _buildContentList(),
-            _buildFooterAction(),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 1.5.rem),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      _buildForm(),
+                      const Spacer(),
+                      _buildFooterAction(),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
   // -------------------------------------------------------------
-  // 3. SUBCOMPONENTES MODULARES (Desglose limpio)
+  // 3. SUBCOMPONENTES MODULARES
   // -------------------------------------------------------------
-  Widget _buildTopBar() { ... }
-  Widget _buildHeaderSection() { ... }
-  Widget _buildContentList() { ... }
+  PreferredSizeWidget _buildAppBar(BuildContext context) { ... }
+  Widget _buildHeader() { ... }
+  Widget _buildForm() { ... }
   Widget _buildFooterAction() { ... }
 }
 ```
 
 ---
 
-## 3. Sistema de Diseño (Design Tokens)
+## 3. Sistema de Diseño Oficial (Creds Tokens)
 
-Todos los valores visuales están centralizados en `lib/core/theme/` para que cualquier cambio de marca se realice en un solo archivo.
+Todos los valores visuales están centralizados en `lib/core/theme/` para garantizar consistencia absoluta con los mockups de Figma.
 
 ### A. Matemática de Unidades REM (`lib/core/utils/app_rem.dart`)
-Para replicar con exactitud los mockups de Figma basados en múltiplos de 16 píxeles:
-
+Para replicar con precisión milimétrica los espaciados basados en múltiplos de 16 píxeles:
 ```dart
 extension RemExtension on num {
   /// Convierte rems a píxeles en pantalla: 1.0.rem = 16.0 px
   double get rem => toDouble() * 16.0;
 }
 ```
-* **Uso:** `SizedBox(height: 1.5.rem)` = 24 px exactos.
+* **Ejemplos:**
+  * `0.5.rem` = 8 px
+  * `1.0.rem` = 16 px
+  * `1.25.rem` = 20 px
+  * `1.5.rem` = 24 px
+  * `2.0.rem` = 32 px
 
-### B. Paleta de Colores (`lib/core/theme/app_colors.dart`)
+### B. Paleta de Colores Oficial (`lib/core/theme/app_colors.dart`)
 ```dart
 abstract final class AppColors {
-  /// Fondo principal oscuro (#3F3B6C)
-  static const Color background = Color(0xFF3F3B6C);
+  /// Fondo principal (#FFFFFF)
+  static const Color background = Color(0xFFFFFFFF);
+  static const Color surface = Color(0xFFFFFFFF);
 
-  /// Fondo de inputs y tarjetas (#624F82)
-  static const Color inputSurface = Color(0xFF624F82);
-
-  /// Color de acción primaria / acento celeste pastel (#A3C7D6)
-  static const Color primaryAction = Color(0xFFA3C7D6);
-
-  /// Color lila para texto secundario e iconos suaves (#9F73AB)
-  static const Color textMuted = Color(0xFF9F73AB);
-
-  /// Blanco puro (#FFFFFF)
-  static const Color textLight = Color(0xFFFFFFFF);
+  /// Color de acción primaria / botón principal (#262626)
+  static const Color primaryAction = Color(0xFF262626);
   static const Color onPrimary = Color(0xFFFFFFFF);
+
+  /// Textos oficiales
+  static const Color textPrimary = Color(0xFF1E1E1E);
+  static const Color textSecondary = Color(0xFF666666);
+  static const Color textMuted = Color(0xFF8E8E93);
+
+  /// Superficies y badges
+  static const Color inputSurface = Color(0xFFF5F5F7);
+  static const Color badgeSurface = Color(0xFFEEEEF2);
+  static const Color border = Color(0xFFE5E5EA);
+
+  /// Iconos
+  static const Color iconSecondary = Color(0xFF71717A);
 }
 ```
 
 ### C. Tipografía Dinámica (`lib/core/theme/app_typography.dart`)
-> [!IMPORTANT]
-> **Regla de oro de Dart/Flutter:** Nunca declarar estilos de texto como `static final TextStyle` cuando se usan fuentes de `google_fonts`, porque la máquina virtual de Dart los almacena en caché estática y no se actualizan con Hot Reload (`r`). **Siempre usar getters dinámicos** (`static TextStyle get headlineLarge => ...`).
-
-```dart
-abstract final class AppTypography {
-  static const String fontFamily = 'Poppins';
-
-  /// Título grande (39px Bold)
-  static TextStyle get headlineLarge => GoogleFonts.poppins(
-    fontSize: 2.4375.rem, // 39 px
-    fontWeight: FontWeight.w700,
-    color: AppColors.textLight,
-    height: 1.15,
-  );
-
-  /// Subtítulo descriptivo (16px Regular)
-  static TextStyle get bodySmall => GoogleFonts.poppins(
-    fontSize: 1.0.rem, // 16 px
-    fontWeight: FontWeight.w400,
-    color: AppColors.textLight.withValues(alpha: 0.85),
-    height: 1.4,
-  );
-
-  /// Texto de botones de acción
-  static TextStyle get button => GoogleFonts.poppins(
-    fontSize: 1.0.rem,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 1.0,
-    color: AppColors.onPrimary,
-  );
-}
-```
+Implementada mediante **getters dinámicos** con `GoogleFonts.poppins` para garantizar compatibilidad con Hot Reload:
+* **`brandTitle`:** Poppins 32px w800 (título de presentación).
+* **`headlineLarge`:** Poppins 30px w700 (títulos de pantalla).
+* **`bodyDescription`:** Poppins 15px w400 (`#666666`).
+* **`button`:** Poppins 16px w700 (`#FFFFFF`).
+* **`input` / `inputHint`:** Poppins 15px w500 / w400.
+* **`linkBold` / `linkNormal`:** Poppins 14px w700 / w400 para enlaces táctiles.
 
 ---
 
-## 4. Componentes Compartidos (`lib/shared/widgets/`)
+## 4. Catálogo de Componentes Globales (`lib/shared/widgets/`)
 
-Cualquier widget que se utilice en más de una pantalla debe crearse aquí:
+1. **`AppButton`:**
+   * Botón principal de 56px de altura y radio de 16px.
+   * Variantes: `primary` (oscuro `#262626`), `secondary` (`#F5F5F7`), `outline` (borde de 1px) y `text`.
+   * Soporte integrado de iconos a la izquierda con espaciado (`iconSpacing`), y estado de carga (`isLoading`).
 
-1. **`AppButton`**: Botón principal de 56px de altura con color `#A3C7D6` y borde redondeado de 28px.
-2. **`AppTextField`**: Caja de texto de 56px con fondo `#624F82`, iconos de prefijo/sufijo y animación de foco en color lila.
-3. **`AppLogo`**: Isotipo oficial con dimensiones parametrizables y soporte para animaciones `Hero(tag: 'app_logo')`.
-4. **`AppTagsText`**: Widget para renderizar subtítulos/etiquetas secundarias con control automático de overflow y color `AppColors.textMuted`.
+2. **`AppHeader` (con `AppTitle` y `AppDescription`):**
+   * Encabezado unificado que resuelve declarativamente: solo título, solo descripción o ambos combinados con espaciado automático.
+   * Constructor nombrado `AppHeader.centered(...)` para pantallas con alineación al centro.
 
+3. **`AppTextField`:**
+   * Campo de entrada estilizado con etiqueta superior en negrita (`label`), caja interactiva `#F9F9FB` con bordes suaves de 16px, foco animado y mensaje de ayuda al pie (`helperText`).
+   * Constructores nombrados de conveniencia: `AppTextField.email(...)` y `AppTextField.password(...)` (con alternancia de visibilidad mediante icono de ojo).
+   * Parámetro `onFieldSubmitted` para envíos desde el teclado.
+
+4. **`AppOtpSection` y `AppOtpInput`:**
+   * Componente todo-en-uno para verificación de 6 dígitos OTP.
+   * Incluye etiqueta superior, 6 casillas con auto-enfoque y manejo de tecla backspace, fila de reenvío con temporizador de cuenta regresiva (00:28) y tarjeta de aviso con icono de expiración (10 minutos).
+
+5. **`AppLinkButton`:**
+   * Botón de texto interactivo con área táctil accesible mínima (44 px) y tipografía `AppTypography.linkBold` (`"Not now"`, `"Do this later"`, `"Change email address"`).
+
+6. **`AppLinkText`:**
+   * Texto mixto interactivo (`"Already have an account? Sign in"`), con estilos separados para prefijo y acción.
+
+7. **`AppGoogleIcon`:**
+   * Isotipo oficial monocromático de Google ("G" bold) extraído fielmente del diseño de Figma.
+
+8. **`AppFeedback`:**
+   * Sistema centralizado de SnackBar / Notificaciones con variantes `.show()`, `.showSuccess()` y `.showError()`.

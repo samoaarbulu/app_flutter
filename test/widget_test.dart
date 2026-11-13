@@ -109,7 +109,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Username'), findsOneWidget);
-    expect(find.text('@ana.entrena'), findsOneWidget);
+    expect(find.text('ana.entrena'), findsOneWidget);
     expect(find.text('Mobile number'), findsOneWidget);
     expect(find.text('+52  55 1234 5678'), findsOneWidget);
     expect(

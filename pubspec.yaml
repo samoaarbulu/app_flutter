@@ -37,6 +37,11 @@ dependencies:
   google_fonts: ^9.0.0
   video_player: ^2.14.1
 
+  # Firebase y Autenticación con Google
+  firebase_core: ^3.12.1
+  firebase_auth: ^5.5.1
+  google_sign_in: ^6.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

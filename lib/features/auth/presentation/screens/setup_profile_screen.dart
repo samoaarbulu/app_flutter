@@ -6,6 +6,7 @@ import '../../../../core/utils/app_rem.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_header.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../services/auth_service.dart';
 import 'location_permission_screen.dart';
 
 /// Pantalla de Configuración de Perfil ("Set up your profile").
@@ -14,14 +15,25 @@ import 'location_permission_screen.dart';
 /// - **Top Bar:** Botón atrás y título centrado ("PROFILE").
 /// - **Encabezado:** "Set up your profile" y descripción explicativa con [AppHeader].
 /// - **Formulario:**
-///   - Campo `Username` con icono de verificación (check).
+///   - Campo `Username` con icono de verificación (check), autocompletado si viene de Google.
 ///   - Campo `Mobile number` con mensaje de ayuda informativo.
-///   - Fila de 2 columnas para `First name` y `Last name`.
+///   - Fila de 2 columnas para `First name` y `Last name` (autocompletados desde el perfil).
 /// - **Acción al pie:** Botón principal ("Save and continue").
 class SetupProfileScreen extends StatefulWidget {
+  final String? initialUsername;
+  final String? initialFirstName;
+  final String? initialLastName;
+  final String? initialPhone;
   final VoidCallback? onSaveAndContinue;
 
-  const SetupProfileScreen({super.key, this.onSaveAndContinue});
+  const SetupProfileScreen({
+    super.key,
+    this.initialUsername,
+    this.initialFirstName,
+    this.initialLastName,
+    this.initialPhone,
+    this.onSaveAndContinue,
+  });
 
   @override
   State<SetupProfileScreen> createState() => _SetupProfileScreenState();
@@ -43,11 +55,34 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Valores iniciales de ejemplo según maqueta de Figma
-    _usernameController = TextEditingController(text: '@ana.entrena');
-    _phoneController = TextEditingController(text: '+52  55 1234 5678');
-    _firstNameController = TextEditingController(text: 'Ana');
-    _lastNameController = TextEditingController(text: 'Torres');
+    final user = AuthService.instance.currentUser;
+
+    // 1. Obtener First name y Last name desde la cuenta de Google (o Figma por defecto)
+    String defaultFirstName = widget.initialFirstName ?? 'Ana';
+    String defaultLastName = widget.initialLastName ?? 'Torres';
+    if (user?.displayName != null && user!.displayName!.trim().isNotEmpty) {
+      final parts = user.displayName!.trim().split(' ');
+      defaultFirstName = parts.first;
+      defaultLastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    }
+
+    // 2. Obtener Username sugerido a partir del correo electrónico (sin arroba)
+    String defaultUsername = widget.initialUsername ?? 'ana.entrena';
+    if (user?.email != null && user!.email!.contains('@')) {
+      final localPart = user.email!.split('@').first;
+      defaultUsername = localPart;
+    }
+
+    // 3. Teléfono (inicia vacío para que el usuario ingrese el suyo)
+    final defaultPhone = widget.initialPhone ??
+        (user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty
+            ? user.phoneNumber!
+            : '');
+
+    _usernameController = TextEditingController(text: defaultUsername);
+    _phoneController = TextEditingController(text: defaultPhone);
+    _firstNameController = TextEditingController(text: defaultFirstName);
+    _lastNameController = TextEditingController(text: defaultLastName);
   }
 
   @override
@@ -73,7 +108,9 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
           widget.onSaveAndContinue!();
         } else {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LocationPermissionScreen()),
+            MaterialPageRoute(
+              builder: (_) => const LocationPermissionScreen(),
+            ),
           );
         }
       }
@@ -94,7 +131,9 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
             return SingleChildScrollView(
               padding: EdgeInsets.symmetric(horizontal: 1.5.rem), // 24 px
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
                 child: IntrinsicHeight(
                   child: Form(
                     key: _formKey,
@@ -102,6 +141,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(height: 1.5.rem), // 24 px
+
                         // 1. Encabezado principal
                         const AppHeader(
                           title: 'Set up your profile',
@@ -110,10 +150,12 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                         ),
 
                         SizedBox(height: 1.5.rem), // 24 px
+
                         // 2. Campo Username con icono de verificación
                         AppTextField(
                           label: 'Username',
                           controller: _usernameController,
+                          hintText: 'e.g. ana.entrena',
                           textInputAction: TextInputAction.next,
                           suffixIcon: const Icon(
                             Icons.check,
@@ -129,23 +171,24 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                         ),
 
                         SizedBox(height: 1.25.rem), // 20 px
-                        // 3. Campo Mobile number con helper text
+
+                        // 3. Campo Mobile number con helper text y placeholder
                         AppTextField(
                           label: 'Mobile number',
                           controller: _phoneController,
+                          hintText: '+52  55 1234 5678',
                           keyboardType: TextInputType.phone,
                           textInputAction: TextInputAction.next,
                           helperText:
                               'Your number will not appear on your profile.',
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Por favor ingresa un número de teléfono';
-                            }
+                            // Campo opcional según requerimientos
                             return null;
                           },
                         ),
 
                         SizedBox(height: 1.25.rem), // 20 px
+
                         // 4. Fila First name y Last name
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
