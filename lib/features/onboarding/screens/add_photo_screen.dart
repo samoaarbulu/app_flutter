@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/services/media_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/app_feedback.dart';
-import '../../../../core/utils/app_rem.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_header.dart';
-import '../../../../shared/widgets/app_link_button.dart';
-import '../../services/auth_service.dart';
+import '../../../core/services/media_service.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_header.dart';
+import '../../../shared/widgets/app_link_button.dart';
+import '../../auth/services/auth_service.dart';
 import 'setup_profile_screen.dart';
 
 /// Pantalla de Selección y Actualización de Foto de Perfil ("Add your photo").

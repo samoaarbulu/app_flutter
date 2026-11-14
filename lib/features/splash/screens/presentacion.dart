@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_typography.dart';
-import '../../../../core/utils/app_feedback.dart';
-import '../../../../core/utils/app_rem.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_header.dart';
-import '../../../../shared/widgets/app_link_text.dart';
-import 'auth_landing.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_header.dart';
+import '../../../shared/widgets/app_link_text.dart';
+import '../../auth/screens/auth_landing.dart';
+import '../../auth/screens/sign_in_screen.dart';
 
 /// Pantalla de Presentación / Bienvenida con video de fondo (01 - Bienvenida).
 ///
@@ -221,7 +221,11 @@ class _PresentationScreenState extends State<PresentationScreen>
           actionText: 'Sign in',
           onTap:
               widget.onSignIn ??
-              () => AppFeedback.show(context, 'Sign in presionado'),
+              () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SignInScreen()),
+                );
+              },
         ),
       ],
     );

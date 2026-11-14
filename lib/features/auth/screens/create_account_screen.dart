@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/app_feedback.dart';
-import '../../../../core/utils/app_rem.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_header.dart';
-import '../../../../shared/widgets/app_text_field.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_header.dart';
+import '../../../shared/widgets/app_text_field.dart';
+import '../../../core/services/creds_api_service.dart';
 import 'verify_email_screen.dart';
 
 /// Pantalla de Creación de Cuenta con Correo Electrónico ("Create your account").
@@ -127,7 +128,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool get _isFormValid =>
       _validateEmail(_emailController.text) == null && _isPasswordValid;
 
-  void _handleSendCode() {
+  Future<void> _handleSendCode() async {
     if (!_isFormValid) {
       AppFeedback.showError(
         context,
@@ -139,10 +140,38 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     final email = _emailController.text.trim();
     setState(() => _isLoading = true);
 
-    // Simulación de envío de código y navegación
-    Future.delayed(const Duration(milliseconds: 350), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
+    try {
+      final response = await CredsApiService.instance.registerStart(
+        email: email,
+        password: _passwordController.text,
+      );
+
+      if (response.devOtpCode != null && response.devOtpCode!.isNotEmpty) {
+        debugPrint('🔐 CREDS Dev OTP para $email: ${response.devOtpCode}');
+      }
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (widget.onSendCode != null) {
+        widget.onSendCode!(email);
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VerifyEmailScreen(
+              email: email,
+              devOtpCode: response.devOtpCode,
+            ),
+          ),
+        );
+      }
+    } on CredsApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (e.isNetworkOrOfflineError &&
+          CredsApiService.instance.offlineFallbackEnabled) {
+        debugPrint('⚠️ Backend offline en CreateAccountScreen: ${e.message}');
         if (widget.onSendCode != null) {
           widget.onSendCode!(email);
         } else {
@@ -152,8 +181,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
           );
         }
+        return;
       }
-    });
+
+      AppFeedback.showError(context, e.message);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      AppFeedback.showError(context, 'Error al enviar el código: $e');
+    }
   }
 
   // -------------------------------------------------------------

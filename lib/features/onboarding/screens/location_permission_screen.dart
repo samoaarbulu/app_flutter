@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/app_feedback.dart';
-import '../../../../core/utils/app_rem.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_header.dart';
-import '../../../../shared/widgets/app_link_button.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_header.dart';
+import '../../../shared/widgets/app_link_button.dart';
+import '../../../core/services/creds_api_service.dart';
 import 'activities_screen.dart';
 
 /// Pantalla de Permisos de Ubicación ("Location permission").
@@ -35,25 +36,57 @@ class LocationPermissionScreen extends StatefulWidget {
 }
 
 class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
-  void _handleEnablePermissions() {
+  Future<void> _saveLocationPreference(bool granted) async {
+    try {
+      await CredsApiService.instance.updatePreferences(
+        locationPermissionGranted: granted,
+      );
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const ActivitiesScreen(),
+        ),
+      );
+    } on CredsApiException catch (e) {
+      if (!mounted) return;
+      if (e.isNetworkOrOfflineError &&
+          CredsApiService.instance.offlineFallbackEnabled) {
+        debugPrint(
+          '⚠️ Backend offline en LocationPermissionScreen: ${e.message}',
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const ActivitiesScreen(),
+          ),
+        );
+        return;
+      }
+      AppFeedback.showError(context, e.message);
+    } catch (e) {
+      if (!mounted) return;
+      AppFeedback.showError(
+        context,
+        'Error al guardar preferencia de ubicación: $e',
+      );
+    }
+  }
+
+  Future<void> _handleEnablePermissions() async {
     if (widget.onEnablePermissions != null) {
       widget.onEnablePermissions!();
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const ActivitiesScreen(),
-      ),
-    );
+    await _saveLocationPreference(true);
   }
 
-  void _handleDoThisLater() {
+  Future<void> _handleDoThisLater() async {
     if (widget.onDoThisLater != null) {
       widget.onDoThisLater!();
-    } else {
-      AppFeedback.show(context, 'Configuración de ubicación pospuesta');
+      return;
     }
+
+    await _saveLocationPreference(false);
   }
 
   @override

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app_flutter/core/services/media_service.dart';
-import 'package:app_flutter/features/auth/presentation/screens/add_photo_screen.dart';
+import 'package:app_flutter/features/onboarding/screens/add_photo_screen.dart';
 
 class FakeMediaService extends MediaService {
   PickedImage? nextImage;

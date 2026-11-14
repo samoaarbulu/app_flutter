@@ -10,21 +10,27 @@ El proyecto utiliza una arquitectura **Feature-First** (modular por funcionalida
 
 ```text
 lib/
-├── core/                         # Núcleo compartido global (no depende de features)
-│   ├── config/                   # Configuración de entornos dev/prod (AppConfig)
-│   ├── services/                 # Servicios globales (FirebaseInitializer, MediaService)
-│   ├── theme/                    # Design System (AppColors, AppTypography, AppTheme)
-│   └── utils/                    # Extensiones y utilidades (AppRem, AppFeedback)
-├── features/                     # Módulos de funcionalidad de negocio
-│   ├── auth/                     # Autenticación y Onboarding
-│   │   ├── presentation/screens/ # Preloading, Bienvenida, Landing, Registro, OTP, Perfil, Permisos
-│   │   └── services/             # AuthService (Google Sign-In)
-│   ├── gyms/                     # Módulo de gimnasios y recomendaciones (en construcción)
-│   └── home/                     # Módulo principal / feeds (en construcción)
-├── shared/                       # Componentes visuales reutilizables en toda la aplicación
-│   └── widgets/                  # AppButton, AppHeader, AppTextField, AppOtpSection, AppLinkButton, etc.
-├── firebase_options_dev.dart     # Configuración oficial de Firebase para Desarrollo
-└── main.dart                     # Punto de entrada de la aplicación
+├── main.dart                         # Punto de entrada de la aplicación
+├── core/                             # Núcleo compartido global (no depende de features)
+│   ├── config/                       # Configuración de entornos y Firebase (app_config, firebase_options_dev)
+│   ├── constants/                    # Constantes globales (country_codes)
+│   ├── services/                     # Servicios globales (CredsApiService, FirebaseInitializer, MediaService)
+│   ├── theme/                        # Design System (AppColors, AppTypography, AppTheme)
+│   └── utils/                        # Extensiones y utilidades (AppRem, AppFeedback)
+├── shared/                           # Componentes visuales reutilizables en toda la aplicación
+│   └── widgets/                      # AppButton, AppHeader, AppTextField, AppOtpSection, AppLinkButton, etc.
+└── features/                         # Módulos por flujo funcional (sin capas innecesarias)
+    ├── splash/                       # Arranque y bienvenida
+    │   └── screens/                  # PreloadingScreen, PresentationScreen
+    ├── auth/                         # Acceso, registro y verificación
+    │   ├── screens/                  # AuthLandingScreen, SignInScreen, CreateAccountScreen, VerifyEmailScreen
+    │   └── services/                 # AuthService (Google Sign-In y Firebase)
+    ├── onboarding/                   # Configuración guiada del perfil inicial
+    │   ├── navigation/               # OnboardingNavigator (enrutado según onboardingStep)
+    │   ├── screens/                  # AddPhotoScreen, SetupProfileScreen, LocationPermissionScreen, ActivitiesScreen
+    │   └── widgets/                  # CountryPickerBottomSheet
+    └── home/                         # Módulo principal de la app
+        └── screens/                  # HomeScreen
 ```
 
 ---

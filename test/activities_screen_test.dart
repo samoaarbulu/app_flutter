@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:app_flutter/features/auth/presentation/screens/activities_screen.dart';
-import 'package:app_flutter/features/auth/presentation/screens/location_permission_screen.dart';
+import 'package:app_flutter/features/onboarding/screens/activities_screen.dart';
+import 'package:app_flutter/features/onboarding/screens/location_permission_screen.dart';
 import 'package:app_flutter/shared/widgets/app_button.dart';
 
 void main() {
@@ -23,10 +23,10 @@ void main() {
         findsOneWidget,
       );
 
-      expect(find.text('Strength'), findsOneWidget);
-      expect(find.text('Functional training'), findsOneWidget);
-      expect(find.text('Cardio'), findsOneWidget);
-      expect(find.text('Cross training'), findsOneWidget);
+      expect(find.text('Strength training'), findsOneWidget);
+      expect(find.text('HIIT'), findsOneWidget);
+      expect(find.text('Pilates'), findsOneWidget);
+      expect(find.text('Yoga'), findsOneWidget);
 
       // Verificar que el label excluido no esté presente
       expect(find.textContaining('Your workout, no labels.'), findsNothing);
@@ -51,7 +51,7 @@ void main() {
       );
 
       // Seleccionar 1 actividad
-      await tester.tap(find.text('Strength'));
+      await tester.tap(find.text('Strength training'));
       await tester.pumpAndSettle();
 
       var button = tester.widget<AppButton>(find.byType(AppButton));
@@ -59,18 +59,18 @@ void main() {
       expect(button.onPressed, isNotNull);
 
       // Seleccionar 2da y 3ra actividad (asegurando visibilidad si la pantalla de test es corta)
-      await tester.tap(find.text('Functional training'));
-      await tester.ensureVisible(find.text('Cardio'));
+      await tester.tap(find.text('HIIT'));
+      await tester.ensureVisible(find.text('Pilates'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cardio'));
+      await tester.tap(find.text('Pilates'));
       await tester.pumpAndSettle();
 
       button = tester.widget<AppButton>(find.byType(AppButton));
       expect(button.text, 'Continue with 3 activities');
 
       // Deseleccionar 1 actividad
-      await tester.ensureVisible(find.text('Cardio'));
-      await tester.tap(find.text('Cardio'));
+      await tester.ensureVisible(find.text('Pilates'));
+      await tester.tap(find.text('Pilates'));
       await tester.pumpAndSettle();
 
       button = tester.widget<AppButton>(find.byType(AppButton));
@@ -80,7 +80,7 @@ void main() {
       await tester.tap(find.byType(AppButton));
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-      expect(submittedIds, containsAll(['strength', 'functional']));
+      expect(submittedIds, containsAll(['strength_training', 'hiit']));
       expect(submittedIds?.length, 2);
     });
 
@@ -94,6 +94,22 @@ void main() {
       );
 
       await tester.tap(find.text('Enable permissions'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ACTIVITIES'), findsOneWidget);
+      expect(find.text('How do you like to train?'), findsOneWidget);
+    });
+
+    testWidgets(
+        'LocationPermissionScreen navigates to ActivitiesScreen on Do this later',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: LocationPermissionScreen(),
+        ),
+      );
+
+      await tester.tap(find.text('Do this later'));
       await tester.pumpAndSettle();
 
       expect(find.text('ACTIVITIES'), findsOneWidget);

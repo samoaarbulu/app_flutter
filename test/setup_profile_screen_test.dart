@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:app_flutter/features/auth/presentation/screens/setup_profile_screen.dart';
+import 'package:app_flutter/features/onboarding/screens/setup_profile_screen.dart';
 import 'package:app_flutter/shared/widgets/app_button.dart';
 import 'package:app_flutter/shared/widgets/app_text_field.dart';
 
