@@ -41,7 +41,7 @@ class ActivitiesScreen extends StatefulWidget {
 }
 
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
-  static const List<ActivityOption> _defaultActivities = [
+  List<ActivityOption> get _defaultActivities => [
     ActivityOption(
       id: 'strength',
       title: 'Strength',
@@ -91,6 +91,36 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       id: 'mobility',
       title: 'Mobility',
       icon: Icons.accessibility_new_rounded,
+    ),
+    ActivityOption(
+      id: 'boxing',
+      title: 'Boxing',
+      icon: Icons.sports_mma_outlined,
+    ),
+    ActivityOption(
+      id: 'hiit',
+      title: 'HIIT',
+      icon: Icons.bolt_rounded,
+    ),
+    ActivityOption(
+      id: 'climbing',
+      title: 'Climbing',
+      icon: Icons.terrain_outlined,
+    ),
+    ActivityOption(
+      id: 'calisthenics',
+      title: 'Calisthenics',
+      icon: Icons.sports_gymnastics_rounded,
+    ),
+    ActivityOption(
+      id: 'rowing',
+      title: 'Rowing',
+      icon: Icons.rowing_rounded,
+    ),
+    ActivityOption(
+      id: 'dance',
+      title: 'Dance fitness',
+      icon: Icons.music_note_outlined,
     ),
   ];
 
@@ -183,7 +213,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 0.75.rem, // 12 px
                         mainAxisSpacing: 0.75.rem, // 12 px
-                        childAspectRatio: 1.48,
+                        mainAxisExtent: 5.75.rem, // 92 px (cards más angostas/compactas)
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -286,7 +316,10 @@ class _ActivityCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
-          padding: EdgeInsets.all(1.0.rem), // 16 px
+          padding: EdgeInsets.symmetric(
+            horizontal: 0.9375.rem, // 15 px
+            vertical: 0.875.rem, // 14 px
+          ),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.inputSurface : AppColors.surface,
             borderRadius: BorderRadius.circular(16.0),
