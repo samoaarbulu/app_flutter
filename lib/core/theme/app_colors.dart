@@ -22,4 +22,7 @@ abstract final class AppColors {
 
   /// Iconos
   static const Color iconSecondary = Color(0xFF71717A);
+
+  /// Estados y validación
+  static const Color error = Color(0xFFFF3B30);
 }

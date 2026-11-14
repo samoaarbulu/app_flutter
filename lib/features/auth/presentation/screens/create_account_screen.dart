@@ -10,20 +10,25 @@ import 'verify_email_screen.dart';
 
 /// Pantalla de Creación de Cuenta con Correo Electrónico ("Create your account").
 ///
-/// Réplica exacta del diseño oficial de Figma:
-/// - **Top Bar:** Botón atrás y título centrado ("ACCOUNT").
-/// - **Encabezado:** Título ("Create your account") y mensaje explicativo sobre el código.
-/// - **Formulario:**
-///   - Campo "Email address" con icono de correo.
-///   - Campo "Create a password" con alternancia de visibilidad y texto de validación.
-///   - Texto legal ("You agree to your Terms of Service and Privacy Policy.").
-/// - **Acción inferior:** Botón principal "Send code" (#262626).
+/// **Reglas de validación y UX implementadas:**
+/// - **Email address:** Formato de correo electrónico válido.
+/// - **Create a password:** 8 o más caracteres, al menos una letra y un número.
+/// - **Helper text dinámico:** El texto de ayuda ("Use 8 or more characters, a letter and a number.")
+///   se oculta automáticamente cuando la contraseña cumple los requisitos para no confundir al usuario.
+/// - **Feedback visual de error:** Borde en rojo (`AppColors.error`), icono y mensaje inferior
+///   al perder el foco (blur) si alguno de los campos no cumple.
+/// - **Botón dinámico:** "Send code" permanece inhabilitado hasta que ambos campos
+///   cumplen los requisitos de validación.
 class CreateAccountScreen extends StatefulWidget {
   final ValueChanged<String>? onSendCode;
+  final String? initialEmail;
+  final String? initialPassword;
 
   const CreateAccountScreen({
     super.key,
     this.onSendCode,
+    this.initialEmail,
+    this.initialPassword,
   });
 
   @override
@@ -34,29 +39,104 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   // -------------------------------------------------------------
   // 1. CONTROLADORES Y ESTADO (<script setup>)
   // -------------------------------------------------------------
-  final TextEditingController _emailController = TextEditingController(
-    text: 'ana.torres@correo.com',
-  );
-  final TextEditingController _passwordController = TextEditingController(
-    text: 'password123',
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
+
+  static final RegExp _emailRegExp = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
 
   bool _isLoading = false;
+  bool _isButtonEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(
+      text: widget.initialEmail ?? 'ana.torres@correo.com',
+    );
+    _passwordController = TextEditingController(
+      text: widget.initialPassword ?? '',
+    );
+
+    _emailController.addListener(_onFieldChanged);
+    _passwordController.addListener(_onFieldChanged);
+    _isButtonEnabled = _isFormValid;
+  }
 
   @override
   void dispose() {
+    _emailController.removeListener(_onFieldChanged);
+    _passwordController.removeListener(_onFieldChanged);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  void _onFieldChanged() {
+    final valid = _isFormValid;
+    setState(() {
+      _isButtonEnabled = valid;
+    });
+  }
+
+  // -------------------------------------------------------------
+  // VALIDACIONES
+  // -------------------------------------------------------------
+
+  String? _validateEmail(String? value) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) {
+      return 'Please enter your email address';
+    }
+    if (!_emailRegExp.hasMatch(text)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    final text = value ?? '';
+    if (text.isEmpty) {
+      return 'Please enter a password';
+    }
+    if (text.length < 8) {
+      return 'Use 8 or more characters, a letter and a number';
+    }
+    final hasLetter = RegExp(r'[a-zA-Z]').hasMatch(text);
+    final hasNumber = RegExp(r'[0-9]').hasMatch(text);
+
+    if (!hasLetter || !hasNumber) {
+      return 'Use 8 or more characters, a letter and a number';
+    }
+
+    return null;
+  }
+
+  bool get _isPasswordValid =>
+      _validatePassword(_passwordController.text) == null;
+
+  /// Helper text dinámico: se oculta cuando la contraseña ya cumple
+  String? get _effectivePasswordHelperText {
+    if (_isPasswordValid) {
+      return null;
+    }
+    return 'Use 8 or more characters, a letter and a number.';
+  }
+
+  bool get _isFormValid =>
+      _validateEmail(_emailController.text) == null && _isPasswordValid;
+
   void _handleSendCode() {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      AppFeedback.showError(context, 'Por favor ingresa un correo válido');
+    if (!_isFormValid) {
+      AppFeedback.showError(
+        context,
+        'Por favor verifica los campos del formulario',
+      );
       return;
     }
 
+    final email = _emailController.text.trim();
     setState(() => _isLoading = true);
 
     // Simulación de envío de código y navegación
@@ -174,18 +254,22 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Campo de Email con constructor especializado
+        // 1. Campo de Email con constructor especializado y validación al desenfocar
         AppTextField.email(
           controller: _emailController,
           hintText: 'ana.torres@correo.com',
+          validateOnFocusLoss: true,
+          focusLossValidator: _validateEmail,
         ),
 
         SizedBox(height: 1.25.rem), // 20 px
 
-        // 2. Campo de Contraseña con helperText y visibilidad automática
+        // 2. Campo de Contraseña con helperText dinámico (se oculta al cumplir)
         AppTextField.password(
           controller: _passwordController,
-          helperText: 'Use 8 or more characters, a letter and a number.',
+          helperText: _effectivePasswordHelperText,
+          validateOnFocusLoss: true,
+          focusLossValidator: _validatePassword,
         ),
       ],
     );
@@ -204,14 +288,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
-  /// Botón principal "Send code"
+  /// Botón principal "Send code" dinámico (inhabilitado si los campos no cumplen)
   Widget _buildFooterAction() {
     return AppButton(
       text: 'Send code',
       variant: AppButtonVariant.primary,
       isLoading: _isLoading,
-      onPressed: _handleSendCode,
+      onPressed: _isButtonEnabled ? _handleSendCode : null,
     );
   }
 }
-

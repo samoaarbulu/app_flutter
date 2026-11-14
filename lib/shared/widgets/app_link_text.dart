@@ -46,6 +46,13 @@ class AppLinkText extends StatelessWidget {
     final effectivePrefixStyle = prefixStyle ?? AppTypography.linkNormal;
     final effectiveActionStyle = actionStyle ?? AppTypography.linkBold;
 
+    // Normaliza el texto previo y la acción para garantizar que siempre exista
+    // exactamente un espacio separador entre ambos, evitando que los textos salgan pegados
+    // (ej. "Already have an account?Sign in").
+    final cleanPrefix = prefixText.trimRight();
+    final cleanAction = actionText.trim();
+    final formattedPrefix = cleanPrefix.isNotEmpty ? '$cleanPrefix ' : '';
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -56,9 +63,10 @@ class AppLinkText extends StatelessWidget {
           text: TextSpan(
             style: effectivePrefixStyle,
             children: [
-              TextSpan(text: prefixText),
+              if (formattedPrefix.isNotEmpty)
+                TextSpan(text: formattedPrefix),
               TextSpan(
-                text: actionText,
+                text: cleanAction,
                 style: effectiveActionStyle,
               ),
             ],

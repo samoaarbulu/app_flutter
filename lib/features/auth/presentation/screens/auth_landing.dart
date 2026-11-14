@@ -106,7 +106,7 @@ class _AuthLandingScreenState extends State<AuthLandingScreen> {
               // -------------------------------------------------------------
               Center(
                 child: AppLinkText(
-                  prefixText: 'Already have an account?',
+                  prefixText: 'Already have an account? ',
                   actionText: 'Sign in',
                   onTap: () {
                     if (widget.onSignIn != null) {

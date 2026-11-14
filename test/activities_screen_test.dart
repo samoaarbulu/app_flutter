@@ -1,0 +1,103 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:app_flutter/features/auth/presentation/screens/activities_screen.dart';
+import 'package:app_flutter/features/auth/presentation/screens/location_permission_screen.dart';
+import 'package:app_flutter/shared/widgets/app_button.dart';
+
+void main() {
+  group('ActivitiesScreen Tests', () {
+    testWidgets('Renders header, grid items, and excludes bottom helper label',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ActivitiesScreen(),
+        ),
+      );
+
+      expect(find.text('ACTIVITIES'), findsOneWidget);
+      expect(find.text('How do you like to train?'), findsOneWidget);
+      expect(
+        find.text(
+          'Choose your usual activities. You can select more than one.',
+        ),
+        findsOneWidget,
+      );
+
+      expect(find.text('Strength'), findsOneWidget);
+      expect(find.text('Functional training'), findsOneWidget);
+      expect(find.text('Cardio'), findsOneWidget);
+      expect(find.text('Cross training'), findsOneWidget);
+
+      // Verificar que el label excluido no esté presente
+      expect(find.textContaining('Your workout, no labels.'), findsNothing);
+
+      // Botón deshabilitado inicialmente con texto 'Continue'
+      final button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.text, 'Continue');
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets(
+        'Selecting and deselecting activities updates button text and state',
+        (WidgetTester tester) async {
+      List<String>? submittedIds;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ActivitiesScreen(
+            onContinue: (ids) => submittedIds = ids,
+          ),
+        ),
+      );
+
+      // Seleccionar 1 actividad
+      await tester.tap(find.text('Strength'));
+      await tester.pumpAndSettle();
+
+      var button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.text, 'Continue with 1 activity');
+      expect(button.onPressed, isNotNull);
+
+      // Seleccionar 2da y 3ra actividad (asegurando visibilidad si la pantalla de test es corta)
+      await tester.tap(find.text('Functional training'));
+      await tester.ensureVisible(find.text('Cardio'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cardio'));
+      await tester.pumpAndSettle();
+
+      button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.text, 'Continue with 3 activities');
+
+      // Deseleccionar 1 actividad
+      await tester.ensureVisible(find.text('Cardio'));
+      await tester.tap(find.text('Cardio'));
+      await tester.pumpAndSettle();
+
+      button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.text, 'Continue with 2 activities');
+
+      // Confirmar envío
+      await tester.tap(find.byType(AppButton));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+      expect(submittedIds, containsAll(['strength', 'functional']));
+      expect(submittedIds?.length, 2);
+    });
+
+    testWidgets(
+        'LocationPermissionScreen navigates to ActivitiesScreen on Enable permissions',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: LocationPermissionScreen(),
+        ),
+      );
+
+      await tester.tap(find.text('Enable permissions'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ACTIVITIES'), findsOneWidget);
+      expect(find.text('How do you like to train?'), findsOneWidget);
+    });
+  });
+}

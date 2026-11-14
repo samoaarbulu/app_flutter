@@ -12,7 +12,7 @@ El proyecto utiliza una arquitectura **Feature-First** (modular por funcionalida
 lib/
 ├── core/                         # Núcleo compartido global (no depende de features)
 │   ├── config/                   # Configuración de entornos dev/prod (AppConfig)
-│   ├── services/                 # Servicios globales (FirebaseInitializer)
+│   ├── services/                 # Servicios globales (FirebaseInitializer, MediaService)
 │   ├── theme/                    # Design System (AppColors, AppTypography, AppTheme)
 │   └── utils/                    # Extensiones y utilidades (AppRem, AppFeedback)
 ├── features/                     # Módulos de funcionalidad de negocio
@@ -132,6 +132,9 @@ abstract final class AppColors {
 
   /// Iconos
   static const Color iconSecondary = Color(0xFF71717A);
+
+  /// Estados y validación
+  static const Color error = Color(0xFFFF3B30);
 }
 ```
 
@@ -159,6 +162,12 @@ Implementada mediante **getters dinámicos** con `GoogleFonts.poppins` para gara
 
 3. **`AppTextField`:**
    * Campo de entrada estilizado con etiqueta superior en negrita (`label`), caja interactiva `#F9F9FB` con bordes suaves de 16px, foco animado y mensaje de ayuda al pie (`helperText`).
+   * **Soporte de Prefijos y Filtros:** Parámetros `prefix`, `prefixText` e `inputFormatters` para selectores de país, prefijos `@`, formato de números o letras.
+   * **Validación reactiva al perder el foco (`validateOnFocusLoss` / `focusLossValidator` / `isEmail`):**
+     * En `AppTextField.email` y campos con `focusLossValidator`, al perder el foco (blur) se evalúan los requisitos de validación.
+     * Si el contenido es inválido o está vacío, el borde y el icono se tornan en color `AppColors.error` (`#FF3B30`), y se muestra una fila de alerta con icono `Icons.error_outline_rounded` y mensaje explicativo.
+     * Al volver a escribir un valor válido en `onChanged`, el estado de error se limpia automáticamente en tiempo real.
+     * Soporta `emailErrorMessage` para personalizar el mensaje de error y `focusLossValidator` para reglas personalizadas.
    * Constructores nombrados de conveniencia: `AppTextField.email(...)` y `AppTextField.password(...)` (con alternancia de visibilidad mediante icono de ojo).
    * Parámetro `onFieldSubmitted` para envíos desde el teclado.
 

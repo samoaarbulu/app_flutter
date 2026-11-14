@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../core/services/media_service.dart';
 
 /// Servicio singleton de autenticación con soporte para Web y Móvil (Android/iOS).
 ///
@@ -19,6 +20,15 @@ class AuthService {
   }
 
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  /// Foto de perfil personalizada seleccionada localmente
+  PickedImage? _customPhoto;
+  PickedImage? get customPhoto => _customPhoto;
+
+  /// Actualiza la foto de perfil personalizada en memoria
+  void setCustomPhoto(PickedImage? photo) {
+    _customPhoto = photo;
+  }
 
   /// Usuario actualmente autenticado
   User? get currentUser => _auth?.currentUser;
@@ -70,6 +80,7 @@ class AuthService {
 
   /// Cierre de sesión en Firebase y en Google
   Future<void> signOut() async {
+    _customPhoto = null;
     if (!kIsWeb) {
       await _googleSignIn.signOut();
     }

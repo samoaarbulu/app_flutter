@@ -7,6 +7,7 @@ import '../../../../core/utils/app_rem.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_header.dart';
 import '../../../../shared/widgets/app_link_button.dart';
+import 'activities_screen.dart';
 
 /// Pantalla de Permisos de Ubicación ("Location permission").
 ///
@@ -34,24 +35,17 @@ class LocationPermissionScreen extends StatefulWidget {
 }
 
 class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
-  bool _isLoading = false;
-
   void _handleEnablePermissions() {
-    setState(() => _isLoading = true);
+    if (widget.onEnablePermissions != null) {
+      widget.onEnablePermissions!();
+      return;
+    }
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        if (widget.onEnablePermissions != null) {
-          widget.onEnablePermissions!();
-        } else {
-          AppFeedback.showSuccess(
-            context,
-            'Permisos de ubicación habilitados',
-          );
-        }
-      }
-    });
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ActivitiesScreen(),
+      ),
+    );
   }
 
   void _handleDoThisLater() {
@@ -168,7 +162,6 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
         AppButton(
           text: 'Enable permissions',
           variant: AppButtonVariant.primary,
-          isLoading: _isLoading,
           onPressed: _handleEnablePermissions,
         ),
 

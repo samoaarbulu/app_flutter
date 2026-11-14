@@ -63,12 +63,13 @@ flowchart TD
 * **Concepto:** Formulario de registro por correo y contraseña.
 * **Diseño:**
   * Encabezado: `AppHeader(title: 'Create your account', description: 'We\'ll send you a code...')`.
-  * **Inputs (`AppTextField`):**
-    * `AppTextField.email`: Preconfigurado con teclado de correo e icono de sobre.
-    * `AppTextField.password`: Preconfigurado con ocultación de caracteres y botón de alternancia de visibilidad (icono de ojo).
-    * Mensaje de ayuda inferior: `"Use 8 or more characters, a letter and a number."`.
+  * **Inputs y Validación Reactiva (`AppTextField`):**
+    * `AppTextField.email`: Validación de formato de correo con borde rojo (`AppColors.error`), icono y mensaje explicativo al perder el foco (blur).
+    * `AppTextField.password`: Validación estricta que exige **8 o más caracteres, al menos una letra y un número**.
+      * **Helper text dinámico inteligente:** Muestra `"Use 8 or more characters, a letter and a number."` cuando el campo está vacío o incompleto. En cuanto la contraseña ingresada cumple todos los requisitos, el mensaje se **oculta automáticamente** para no confundir al usuario ni dar la falsa impresión de que su contraseña es inválida.
+      * **Error visual al perder foco:** Si no cumple, resalta el borde en rojo (`AppColors.error`) con icono de advertencia. Al corregirse, el estado de error se limpia en tiempo real.
   * Aviso de términos: `"You agree to your Terms of Service and Privacy Policy."`.
-  * Botón principal: `"Send code"` con estado de carga interactivo.
+  * **Botón dinámico "Send code":** Permanece **deshabilitado** (estilo atenuado al 50%, no clickeable) hasta que ambos campos (Email y Password) cumplan con todos los requisitos de validación, habilitándose automáticamente.
 
 ---
 
@@ -76,7 +77,7 @@ flowchart TD
 * **Concepto:** Verificación del código de 6 dígitos enviado por correo.
 * **Diseño:**
   * Badge superior: Contenedor suave con icono de sobre.
-  * Encabezado: `AppHeader(title: 'Check your email', description: 'We sent a 6-digit code to ana.torres@correo.com.')`.
+  * Encabezado: `AppHeader(title: 'Check your email', description: 'We sent a 6-digit code to ana.torres@correo.com')`.
   * **Componente todo-en-uno `AppOtpSection`:**
     * Etiqueta: `"Verification code"`.
     * 6 casillas OTP estilizadas de 48px de ancho con auto-avance y soporte de backspace.
@@ -88,7 +89,7 @@ flowchart TD
 ---
 
 ### 6. `AddPhotoScreen` (`lib/features/auth/presentation/screens/add_photo_screen.dart`)
-* **Concepto:** Subida y personalización de foto de perfil.
+* **Concepto:** Subida, captura y personalización de foto de perfil con reemplazo en tiempo real.
 * **Diseño e Integración Inteligente:**
   * Top Bar: Botón atrás y título centrado `PROFILE`.
   * Encabezado: `AppHeader(title: 'Add your photo', description: 'Lorem ipsum dolor')`.
@@ -101,26 +102,48 @@ flowchart TD
     * **Si viene por Email / no tiene foto:**
       * Muestra el placeholder circular gris con el icono de cámara por defecto.
       * Título y subtítulo: `"Upload your profile photo"` y `"Optional · You can change it later"`.
+    * **Selección y Reemplazo de Foto (`MediaService`):**
+      * Al tocar el avatar o su insignia se despliega un **Modal Bottom Sheet** nativo del Design System:
+        1. 📸 **"Take photo"**: Abre la cámara del dispositivo (`ImageSource.camera`).
+        2. 🖼️ **"Choose from gallery"**: Abre la galería del dispositivo (`ImageSource.gallery`).
+        3. 🗑️ **"Remove current photo"**: Disponible cuando hay una foto activa (local o de Google), permitiendo restablecer el avatar a su estado por defecto.
+      * **Universalidad Multiplataforma:** La imagen seleccionada se procesa en memoria como `Uint8List` optimizada a 1024x1024 px con calidad 85%, funcionando idénticamente en Web (sin colapsos por `dart:io.File`), Android e iOS.
+      * **Persistencia en sesión:** Al pulsar `"Save and continue"`, la foto elegida se almacena en `AuthService.instance.customPhoto` para que esté disponible en los siguientes pasos del onboarding.
   * Botón principal: `"Save and continue"`.
-  * Enlace secundario: `AppLinkButton(text: 'Not now')`.
+  * **Enlace secundario dinámico y animado (`AnimatedSwitcher`):**
+    * Solo se muestra `"Not now"` cuando el usuario **no tiene una foto activa**.
+    * Si la pantalla abre con foto de Google o tras subir una foto de galería/cámara, `"Not now"` se **desvanece y oculta suavemente** (con animación de opacidad y tamaño), concentrando la atención únicamente en `"Save and continue"`.
+    * Si el usuario elimina la foto activa, `"Not now"` vuelve a aparecer suavemente.
 
 ---
 
 ### 7. `SetupProfileScreen` (`lib/features/auth/presentation/screens/setup_profile_screen.dart`)
-* **Concepto:** Configuración de datos del usuario y comunidad.
+* **Concepto:** Configuración de perfil del usuario con validación estricta y selector de países para iPhone.
 * **Autocompletado desde Google:**
   * **First name y Last name:** Se extraen y separan automáticamente desde `user.displayName`.
-  * **Username:** Se sugiere automáticamente el identificador limpio extraído del correo **sin el símbolo `@`** (ej. `jelizabeth.dev`), con placeholder `e.g. ana.entrena`.
-  * **Mobile number:** Inicia **completamente vacío** para que el usuario escriba su propio número sin tener que borrar texto previo, utilizando `+52  55 1234 5678` únicamente como texto guía en gris (*hintText*).
-  * Si no viene de Google, mantiene los valores por defecto del diseño de Figma (`Ana`, `Torres`, `ana.entrena`).
-* **Diseño:**
-  * Top Bar: Título centrado `PROFILE`.
-  * Encabezado: `AppHeader(title: 'Set up your profile', description: 'This is how your community will find you.')`.
-  * **Formulario completo (`AppTextField`):**
-    1. **Username:** Campo de texto limpio con icono de check (`Icons.check`) como `suffixIcon`.
-    2. **Mobile number:** Inicia vacío con teclado telefónico, placeholder en gris suave y mensaje informativo: `"Your number will not appear on your profile."`.
-    3. **Fila de dos columnas:** Distribución equitativa para **First name** y **Last name**.
-  * Botón principal: `"Save and continue"`.
+  * **Username:** Inicia con prefijo `@` (ej. `@jelizabeth.dev` o `@ana.entrena`).
+  * **Mobile number:** Inicia **vacío** para que el usuario escriba su propio número sin tener que borrar texto previo, con bandera y prefijo por defecto de México (`🇲🇽 +52`).
+* **Reglas de Negocio y Validación:**
+  1. **Username:**
+     * Formateador automático `UsernameTextInputFormatter` que garantiza que siempre comience con `@`.
+     * Únicamente el carácter `@` se considera campo vacío (`"Please enter a username"`).
+     * **Bloqueo en tiempo real:** Filtra e impide físicamente teclear cualquier carácter extraño (ej. `=`, `!`, `$`, `%`, espacios o caracteres especiales); solo permite escribir letras, números, `-`, `_` y `.`.
+     * Indicador visual de check (`Icons.check`) reactivo en color verde al ser válido.
+  2. **Mobile number:**
+     * Bloqueo estricto de letras mediante `FilteringTextInputFormatter.digitsOnly` y teclado telefónico.
+     * **Selector de prefijos internacionales (`CountryPickerBottomSheet`):**
+       * Optimizado para iOS/iPhones: banderas con emojis nativos Unicode (Apple Color Emoji), físicas inerciales con rebote (`BouncingScrollPhysics`) y retroalimentación háptica táctil (`HapticFeedback.selectionClick()`).
+       * Buscador en tiempo real por nombre de país o código internacional.
+     * Validación de longitud mínima (mínimo 8 dígitos).
+  3. **First name y Last name:**
+     * Obligatorios (no vacíos).
+     * Solo letras y espacios (permite acentos y caracteres del español como `á, é, í, ó, ú, ñ, ü`). Bloquea números y símbolos.
+  4. **Feedback visual de error (*Focus Loss*):**
+     * Al perder el foco (blur), si el campo no cumple las reglas se resalta con borde rojo (`AppColors.error`), icono en rojo y fila inferior con icono `Icons.error_outline_rounded` y texto explicativo.
+     * Al corregir el valor, el error se limpia reactivamente en tiempo real.
+  5. **Botón "Save and continue" dinámico:**
+     * Permanece **deshabilitado** (estilo atenuado con opacidad al 50%, no clickeable) hasta que todos los campos cumplan con los requisitos.
+     * Se **habilita automáticamente** tan pronto todos los inputs son válidos.
 
 ---
 

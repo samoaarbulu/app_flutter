@@ -77,6 +77,22 @@ void main() {
     );
     expect(find.text('Send code'), findsOneWidget);
 
+    // Ingresar contraseña válida para habilitar el botón y ocultar el helper text
+    final passwordField =
+        find.widgetWithText(AppTextField, 'Create a password');
+    final passwordInput = find.descendant(
+      of: passwordField,
+      matching: find.byType(TextFormField),
+    );
+    await tester.enterText(passwordInput, 'password123');
+    await tester.pumpAndSettle();
+
+    // El helper text se oculta automáticamente al ser válida
+    expect(
+      find.text('Use 8 or more characters, a letter and a number.'),
+      findsNothing,
+    );
+
     // 3. Ir a VerifyEmailScreen
     await tester.tap(find.text('Send code'));
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
@@ -109,9 +125,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Username'), findsOneWidget);
-    expect(find.text('ana.entrena'), findsOneWidget);
+    expect(find.text('@ana.entrena'), findsOneWidget);
     expect(find.text('Mobile number'), findsOneWidget);
-    expect(find.text('+52  55 1234 5678'), findsOneWidget);
+    expect(find.text('+52'), findsOneWidget);
     expect(
       find.text('Your number will not appear on your profile.'),
       findsOneWidget,
@@ -121,6 +137,13 @@ void main() {
     expect(find.text('Last name'), findsOneWidget);
     expect(find.text('Torres'), findsOneWidget);
     expect(find.text('Save and continue'), findsOneWidget);
+
+    // Ingresar teléfono para habilitar el botón "Save and continue"
+    await tester.enterText(
+      find.widgetWithText(TextFormField, '55 1234 5678'),
+      '5512345678',
+    );
+    await tester.pumpAndSettle();
 
     // 6. Ir a LocationPermissionScreen al presionar "Save and continue"
     await tester.tap(find.text('Save and continue'));
@@ -198,5 +221,43 @@ void main() {
     expect(find.text('Desc Dual'), findsOneWidget);
     expect(find.text('Titulo Atomico'), findsOneWidget);
     expect(find.text('Desc Atomica'), findsOneWidget);
+  });
+
+  testWidgets('AppLinkText ensures separation space between prefix and action',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              // Caso 1: Sin espacio al final en prefixText (problema original)
+              AppLinkText(
+                prefixText: 'Already have an account?',
+                actionText: 'Sign in',
+              ),
+              // Caso 2: Con espacio existente
+              AppLinkText(
+                prefixText: 'Already have an account? ',
+                actionText: 'Sign in',
+              ),
+              // Caso 3: Con múltiples espacios
+              AppLinkText(
+                prefixText: 'Already have an account?   ',
+                actionText: '  Sign in  ',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // En todos los casos, el texto renderizado siempre debe contener "Already have an account? Sign in"
+    // con exactamente un espacio y nunca "Already have an account?Sign in"
+    final richTexts = tester.widgetList<RichText>(find.byType(RichText));
+    for (final richText in richTexts) {
+      final plainText = richText.text.toPlainText();
+      expect(plainText, equals('Already have an account? Sign in'));
+      expect(plainText.contains('account?Sign in'), isFalse);
+    }
   });
 }
