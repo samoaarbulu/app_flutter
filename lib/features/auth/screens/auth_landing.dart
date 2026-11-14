@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/app_feedback.dart';
-import '../../../../core/utils/app_rem.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_google_icon.dart';
-import '../../../../shared/widgets/app_header.dart';
-import '../../../../shared/widgets/app_link_text.dart';
-import '../../services/auth_service.dart';
-import 'add_photo_screen.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_google_icon.dart';
+import '../../../shared/widgets/app_header.dart';
+import '../../../shared/widgets/app_link_text.dart';
+import '../services/auth_service.dart';
+import '../../../core/services/creds_api_service.dart';
+import '../../onboarding/navigation/onboarding_navigator.dart';
+import '../../onboarding/screens/add_photo_screen.dart';
 import 'create_account_screen.dart';
+import 'sign_in_screen.dart';
 
 /// Pantalla de Selección de Método de Autenticación ("Build your Creds").
 ///
@@ -53,12 +56,15 @@ class _AuthLandingScreenState extends State<AuthLandingScreen> {
       if (!mounted) return;
 
       if (credential != null && credential.user != null) {
-        final userName = credential.user!.displayName ?? 'Usuario';
+        final backendUser = CredsApiService.instance.currentUser;
+        final userName =
+            backendUser?.firstName ?? credential.user!.displayName ?? 'Usuario';
         AppFeedback.showSuccess(context, '¡Bienvenido $userName!');
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const AddPhotoScreen(),
-          ),
+        await OnboardingNavigator.navigateFromProfile(
+          context,
+          backendUser,
+          fallbackScreen: const AddPhotoScreen(),
+          clearStackWhenCompleted: true,
         );
       }
     } catch (e) {
@@ -112,7 +118,9 @@ class _AuthLandingScreenState extends State<AuthLandingScreen> {
                     if (widget.onSignIn != null) {
                       widget.onSignIn!();
                     } else {
-                      AppFeedback.show(context, 'Pantalla de Sign in próximamente');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SignInScreen()),
+                      );
                     }
                   },
                 ),

@@ -3,8 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/app_rem.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../auth/services/auth_service.dart';
+import '../../../core/services/creds_api_service.dart';
+import '../../onboarding/navigation/onboarding_navigator.dart';
 import 'presentacion.dart';
 
 /// Pantalla de Preloading / Splash con animación de marca "3D Float".
@@ -35,6 +38,7 @@ class _PreloadingScreenState extends State<PreloadingScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _floatController;
   Timer? _navigationTimer;
+  Future<CredsUserProfile?>? _sessionCheckFuture;
   bool _hasNavigated = false;
 
   @override
@@ -47,28 +51,85 @@ class _PreloadingScreenState extends State<PreloadingScreen>
       duration: const Duration(milliseconds: 2400),
     )..repeat();
 
-    // 2. Temporizador para transición automática a la pantalla de presentación
+    // 2. Validar o restaurar sesión en paralelo mientras corre la animación.
+    //    - Si hay JWT del backend en RAM, consultamos GET /v1/auth/me.
+    //    - Si se recargó la app (RAM vacía) pero Firebase tiene sesión en caché,
+    //      restauramos el usuario de Firebase y lo canjeamos en el backend.
+    if (CredsApiService.instance.hasSession ||
+        AuthService.instance.isFirebaseReady) {
+      _sessionCheckFuture = _checkActiveSession();
+    }
+
+    // 3. Temporizador de 2.6s para navegar automáticamente al terminar el splash.
     _navigationTimer = Timer(widget.duration, _navigateToPresentation);
   }
 
-  void _navigateToPresentation() {
+  /// Verifica si el usuario ya tiene sesión válida en el backend CREDS.
+  Future<CredsUserProfile?> _checkActiveSession() async {
+    try {
+      // Caso A: Ya tenemos accessToken del backend en memoria RAM.
+      if (CredsApiService.instance.hasSession) {
+        return await CredsApiService.instance.getMe();
+      }
+
+      // Caso B: RAM limpia (ej. recarga F5), pero Firebase recuerda cuenta Google.
+      final firebaseUser = await AuthService.instance.waitForRestoredUser();
+      if (firebaseUser == null) {
+        return null;
+      }
+
+      // Canjeamos el token de Firebase por una sesión JWT real en NestJS.
+      return await AuthService.instance.syncFirebaseUserWithBackend(
+        firebaseUser,
+      );
+    } on CredsApiException catch (e) {
+      // Si el backend rechaza el token (401/403), limpiamos la sesión local.
+      if (!e.isNetworkOrOfflineError &&
+          (e.statusCode == 401 || e.statusCode == 403)) {
+        CredsApiService.instance.clearSession();
+        return null;
+      }
+      // Si el servidor está apagado o sin red, no bloqueamos y volvemos al flujo normal.
+      debugPrint(
+        '⚠️ No se pudo validar sesión en PreloadingScreen: ${e.message}',
+      );
+      return null;
+    } catch (e) {
+      debugPrint('⚠️ Error inesperado al verificar sesión: $e');
+      return null;
+    }
+  }
+
+  /// Ejecuta la transición con cross-fade al terminar el splash o tocar la pantalla.
+  Future<void> _navigateToPresentation() async {
     if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
 
     if (widget.onComplete != null) {
       widget.onComplete!();
-    } else {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 550),
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const PresentationScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
+      return;
     }
+
+    // Esperamos el resultado de la validación iniciada en initState().
+    final CredsUserProfile? activeProfile =
+        _sessionCheckFuture != null ? await _sessionCheckFuture : null;
+    if (!mounted) return;
+
+    // Con sesión activa: va directo a Home o al paso pendiente del onboarding.
+    // Sin sesión activa: abre la pantalla de bienvenida con video.
+    final Widget destination = activeProfile != null
+        ? OnboardingNavigator.screenForProfile(activeProfile)
+        : const PresentationScreen();
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 550),
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override

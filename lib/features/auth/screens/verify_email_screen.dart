@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/app_feedback.dart';
-import '../../../../core/utils/app_rem.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_header.dart';
-import '../../../../shared/widgets/app_link_button.dart';
-import '../../../../shared/widgets/app_otp_section.dart';
-import 'add_photo_screen.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_header.dart';
+import '../../../shared/widgets/app_link_button.dart';
+import '../../../shared/widgets/app_otp_section.dart';
+import '../../../core/services/creds_api_service.dart';
+import '../../onboarding/navigation/onboarding_navigator.dart';
+import '../../onboarding/screens/add_photo_screen.dart';
 
 /// Pantalla de Verificación de Código ("Check your email").
 ///
@@ -20,11 +22,13 @@ import 'add_photo_screen.dart';
 /// - **Acciones inferiores:** Botón "Verify email" y enlace "Change email address".
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
+  final String? devOtpCode;
   final ValueChanged<String>? onVerified;
 
   const VerifyEmailScreen({
     super.key,
     this.email = 'ana.torres@correo.com',
+    this.devOtpCode,
     this.onVerified,
   });
 
@@ -36,10 +40,24 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   // -------------------------------------------------------------
   // 1. ESTADO Y CONTROLADORES (<script setup>)
   // -------------------------------------------------------------
-  String _enteredCode = '482916';
+  late String _enteredCode;
+  late final List<String> _initialOtpValues;
   bool _isLoading = false;
 
-  void _handleVerify() {
+  @override
+  void initState() {
+    super.initState();
+    final devCode = widget.devOtpCode;
+    if (devCode != null && devCode.length == 6) {
+      _enteredCode = devCode;
+      _initialOtpValues = devCode.split('');
+    } else {
+      _enteredCode = '482916';
+      _initialOtpValues = const ['4', '8', '2', '9', '1', '6'];
+    }
+  }
+
+  Future<void> _handleVerify() async {
     if (_enteredCode.length < 6) {
       AppFeedback.showError(
         context,
@@ -50,10 +68,31 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulación de verificación
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
+    try {
+      final authResponse = await CredsApiService.instance.verifyOtp(
+        email: widget.email,
+        code: _enteredCode,
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (widget.onVerified != null) {
+        widget.onVerified!(_enteredCode);
+      } else {
+        await OnboardingNavigator.navigateFromProfile(
+          context,
+          authResponse.user,
+          fallbackScreen: const AddPhotoScreen(),
+        );
+      }
+    } on CredsApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (e.isNetworkOrOfflineError &&
+          CredsApiService.instance.offlineFallbackEnabled) {
+        debugPrint('⚠️ Backend offline en VerifyEmailScreen: ${e.message}');
         if (widget.onVerified != null) {
           widget.onVerified!(_enteredCode);
         } else {
@@ -63,12 +102,42 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             ),
           );
         }
+        return;
       }
-    });
+
+      AppFeedback.showError(context, e.message);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      AppFeedback.showError(context, 'Error al verificar código: $e');
+    }
   }
 
-  void _handleResendCode() {
-    AppFeedback.show(context, 'Nuevo código enviado a ${widget.email}');
+  Future<void> _handleResendCode() async {
+    try {
+      final response = await CredsApiService.instance.resendOtp(
+        email: widget.email,
+      );
+      if (response.devOtpCode != null && response.devOtpCode!.isNotEmpty) {
+        debugPrint('🔐 CREDS Dev OTP reenviado: ${response.devOtpCode}');
+      }
+      if (!mounted) return;
+      AppFeedback.showSuccess(
+        context,
+        'Nuevo código enviado a ${widget.email}',
+      );
+    } on CredsApiException catch (e) {
+      if (!mounted) return;
+      if (e.isNetworkOrOfflineError &&
+          CredsApiService.instance.offlineFallbackEnabled) {
+        AppFeedback.show(context, 'Nuevo código enviado a ${widget.email}');
+        return;
+      }
+      AppFeedback.showError(context, e.message);
+    } catch (e) {
+      if (!mounted) return;
+      AppFeedback.showError(context, 'No se pudo reenviar el código: $e');
+    }
   }
 
   // -------------------------------------------------------------
@@ -106,7 +175,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       SizedBox(height: 1.75.rem), // 28 px
                       // 3. Sección OTP completa (Componente global AppOtpSection)
                       AppOtpSection(
-                        initialValues: const ['4', '8', '2', '9', '1', '6'],
+                        initialValues: _initialOtpValues,
                         onChanged: (val) => _enteredCode = val,
                         onCompleted: (val) {
                           _enteredCode = val;

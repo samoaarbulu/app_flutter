@@ -10,6 +10,8 @@ Este documento describe la arquitectura, diseño visual y navegación de todas l
 flowchart TD
     A["1. PreloadingScreen (3D Float creds)"] -->|2.6s o tap| B["2. PresentationScreen (Video)"]
     B -->|Get started| C["3. AuthLandingScreen (Build your Creds)"]
+    B -->|Sign in| SI["SignInScreen (Welcome back)"]
+    C -->|Sign in| SI
     C -->|Continue with Google (Login exitoso)| F["6. AddPhotoScreen (Add your photo)"]
     C -->|Continue with Email| D["4. CreateAccountScreen (Email + Pass)"]
     D -->|Send code| E["5. VerifyEmailScreen (Check your email / OTP)"]
@@ -17,14 +19,16 @@ flowchart TD
     E -->|Verify email| F
     F -->|Save and continue o Not now| G["7. SetupProfileScreen (Set up your profile)"]
     G -->|Save and continue| H["8. LocationPermissionScreen (Location permission)"]
-    H -->|Enable permissions o Do this later| I["Home / Exploración de Gimnasios"]
+    H -->|Enable permissions o Do this later| ACT["9. ActivitiesScreen (22 disciplinas oficiales)"]
+    ACT -->|Continue| HOME["10. HomeScreen (Onboarding completed)"]
+    SI -->|Login / onboardingStep| HOME
 ```
 
 ---
 
 ## 📋 Catálogo de Pantallas Construidas
 
-### 1. `PreloadingScreen` (`lib/features/auth/presentation/screens/preloading_screen.dart`)
+### 1. `PreloadingScreen` (`lib/features/splash/screens/preloading_screen.dart`)
 * **Concepto:** Pantalla inicial de arranque (Splash) con física GPU "3D Float".
 * **Diseño:**
   * Wordmark `"creds"` en minúsculas, peso **Black (Poppins w900)** y tamaño de **58 px** (`3.625.rem`) en color `#1E1E1E`.
@@ -35,7 +39,7 @@ flowchart TD
 
 ---
 
-### 2. `PresentationScreen` (`lib/features/auth/presentation/screens/presentacion.dart`)
+### 2. `PresentationScreen` (`lib/features/splash/screens/presentacion.dart`)
 * **Concepto:** Pantalla de bienvenida oficial con video de alta resolución en bucle.
 * **Diseño:**
   * Fondo: `video_player` reproduciendo `assets/video/fondo_presentacion.mp4` silenciado en bucle continuo.
@@ -46,7 +50,7 @@ flowchart TD
 
 ---
 
-### 3. `AuthLandingScreen` (`lib/features/auth/presentation/screens/auth_landing.dart`)
+### 3. `AuthLandingScreen` (`lib/features/auth/screens/auth_landing.dart`)
 * **Concepto:** Selector de método de autenticación.
 * **Diseño:**
   * Top Bar: Botón atrás y título centrado en mayúsculas `ACCOUNT` (`letterSpacing: 2.0`).
@@ -59,7 +63,7 @@ flowchart TD
 
 ---
 
-### 4. `CreateAccountScreen` (`lib/features/auth/presentation/screens/create_account_screen.dart`)
+### 4. `CreateAccountScreen` (`lib/features/auth/screens/create_account_screen.dart`)
 * **Concepto:** Formulario de registro por correo y contraseña.
 * **Diseño:**
   * Encabezado: `AppHeader(title: 'Create your account', description: 'We\'ll send you a code...')`.
@@ -73,7 +77,7 @@ flowchart TD
 
 ---
 
-### 5. `VerifyEmailScreen` (`lib/features/auth/presentation/screens/verify_email_screen.dart`)
+### 5. `VerifyEmailScreen` (`lib/features/auth/screens/verify_email_screen.dart`)
 * **Concepto:** Verificación del código de 6 dígitos enviado por correo.
 * **Diseño:**
   * Badge superior: Contenedor suave con icono de sobre.
@@ -88,7 +92,7 @@ flowchart TD
 
 ---
 
-### 6. `AddPhotoScreen` (`lib/features/auth/presentation/screens/add_photo_screen.dart`)
+### 6. `AddPhotoScreen` (`lib/features/onboarding/screens/add_photo_screen.dart`)
 * **Concepto:** Subida, captura y personalización de foto de perfil con reemplazo en tiempo real.
 * **Diseño e Integración Inteligente:**
   * Top Bar: Botón atrás y título centrado `PROFILE`.
@@ -117,7 +121,7 @@ flowchart TD
 
 ---
 
-### 7. `SetupProfileScreen` (`lib/features/auth/presentation/screens/setup_profile_screen.dart`)
+### 7. `SetupProfileScreen` (`lib/features/onboarding/screens/setup_profile_screen.dart`)
 * **Concepto:** Configuración de perfil del usuario con validación estricta y selector de países para iPhone.
 * **Autocompletado desde Google:**
   * **First name y Last name:** Se extraen y separan automáticamente desde `user.displayName`.
@@ -147,14 +151,28 @@ flowchart TD
 
 ---
 
-### 8. `LocationPermissionScreen` (`lib/features/auth/presentation/screens/location_permission_screen.dart`)
+### 8. `LocationPermissionScreen` (`lib/features/onboarding/screens/location_permission_screen.dart`)
 * **Concepto:** Solicitud de permisos GPS para mapas y recomendaciones.
 * **Diseño:**
   * Top Bar: Título centrado `LOCATION`.
   * **Badge circular:** Diámetro de 120 px (`7.5.rem`) con fondo `AppColors.badgeSurface` e icono de pin de ubicación (`Icons.location_on_outlined`).
   * Encabezado: `AppHeader.centered(title: 'Location permission', description: 'Enable location access for a more detailed map with\nthe best recommendations.')`.
-  * Botón principal: `"Enable permissions"`.
-  * Enlace secundario: `AppLinkButton(text: 'Do this later')`.
+  * Botón principal: `"Enable permissions"` (registra `locationPermissionGranted: true` en `/v1/users/preferences` y avanza a `ActivitiesScreen`).
+  * Enlace secundario: `AppLinkButton(text: 'Do this later')` (registra `locationPermissionGranted: false` y avanza a `ActivitiesScreen`).
+
+---
+
+### 9. `ActivitiesScreen` (`lib/features/onboarding/screens/activities_screen.dart`)
+* **Concepto:** Selección múltiple de disciplinas habituales (`"How do you like to train?"`).
+* **Catálogo e Integración Backend:**
+  * Renderiza el catálogo oficial de **22 actividades** sincronizadas con PostgreSQL (`auth_core.activity_types`) mediante `GET /v1/users/activities/catalog` y mantiene la lista completa como respaldo offline.
+  * Al pulsar `"Continue with N activities"`, envía `activityCodes` a `PATCH /v1/users/preferences` (marcando `profileCompleted = true` en backend) y navega a `HomeScreen`.
+
+---
+
+### 10. `SignInScreen` (`lib/features/auth/screens/sign_in_screen.dart`) y `HomeScreen` (`lib/features/home/screens/home_screen.dart`)
+* **`SignInScreen`:** Pantalla `01B Sign in` conectada a `POST /v1/auth/login` y Google Sign-In, que redirige automáticamente según `onboardingStep` usando `OnboardingNavigator`.
+* **`HomeScreen`:** Pantalla de destino una vez completado el onboarding, mostrando el resumen de usuario y cierre de sesión (`AuthService.instance.signOut()`).
 
 ---
 

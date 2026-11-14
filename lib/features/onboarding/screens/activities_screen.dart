@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/app_feedback.dart';
-import '../../../../core/utils/app_rem.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_header.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_header.dart';
+import '../../home/screens/home_screen.dart';
+import '../../../core/services/creds_api_service.dart';
 
 /// Modelo inmutable para representar una actividad física en el onboarding.
 class ActivityOption {
@@ -41,66 +43,184 @@ class ActivitiesScreen extends StatefulWidget {
 }
 
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
-  static const List<ActivityOption> _defaultActivities = [
+  static IconData _iconForKey(String iconKey) {
+    return switch (iconKey) {
+      'dumbbell' => Icons.fitness_center_outlined,
+      'flame' => Icons.local_fire_department_outlined,
+      'reformer' => Icons.self_improvement_outlined,
+      'lotus' => Icons.spa_outlined,
+      'runner' => Icons.directions_run_rounded,
+      'footprints' => Icons.directions_walk_rounded,
+      'music_note' => Icons.music_note_rounded,
+      'padel_racquet' => Icons.sports_tennis_outlined,
+      'tennis_ball' => Icons.sports_baseball_outlined,
+      'boxing_glove' => Icons.sports_mma_outlined,
+      'sparkles' => Icons.auto_awesome_outlined,
+      'wind' => Icons.air_rounded,
+      'sound_wave' => Icons.graphic_eq_rounded,
+      'snowflake' => Icons.ac_unit_rounded,
+      'thermometer_hot' => Icons.thermostat_rounded,
+      'golf_flag' => Icons.golf_course_rounded,
+      'ballet' => Icons.accessibility_new_rounded,
+      'bike' => Icons.directions_bike_rounded,
+      'whistle' => Icons.timer_outlined,
+      'kettlebell' => Icons.flash_on_rounded,
+      'martial_arts' => Icons.sports_kabaddi_outlined,
+      'heart_pulse' => Icons.monitor_heart_outlined,
+      _ => Icons.fitness_center_outlined,
+    };
+  }
+
+  static final List<ActivityOption> _defaultActivities = [
     ActivityOption(
-      id: 'strength',
-      title: 'Strength',
-      icon: Icons.fitness_center_outlined,
+      id: 'strength_training',
+      title: 'Strength training',
+      icon: _iconForKey('dumbbell'),
     ),
     ActivityOption(
-      id: 'functional',
-      title: 'Functional training',
-      icon: Icons.show_chart_rounded,
+      id: 'hiit',
+      title: 'HIIT',
+      icon: _iconForKey('flame'),
     ),
     ActivityOption(
-      id: 'cardio',
-      title: 'Cardio',
-      icon: Icons.monitor_heart_outlined,
+      id: 'pilates',
+      title: 'Pilates',
+      icon: _iconForKey('reformer'),
     ),
     ActivityOption(
-      id: 'cross_training',
-      title: 'Cross training',
-      icon: Icons.timer_outlined,
-    ),
-    ActivityOption(
-      id: 'yoga_pilates',
-      title: 'Yoga / Pilates',
-      icon: Icons.self_improvement_outlined,
-    ),
-    ActivityOption(
-      id: 'group_classes',
-      title: 'Group classes',
-      icon: Icons.people_outline_rounded,
+      id: 'yoga',
+      title: 'Yoga',
+      icon: _iconForKey('lotus'),
     ),
     ActivityOption(
       id: 'running',
       title: 'Running',
-      icon: Icons.directions_run_rounded,
+      icon: _iconForKey('runner'),
+    ),
+    ActivityOption(
+      id: 'walking',
+      title: 'Walking',
+      icon: _iconForKey('footprints'),
+    ),
+    ActivityOption(
+      id: 'dance',
+      title: 'Dance',
+      icon: _iconForKey('music_note'),
+    ),
+    ActivityOption(
+      id: 'padel',
+      title: 'Padel',
+      icon: _iconForKey('padel_racquet'),
+    ),
+    ActivityOption(
+      id: 'tennis',
+      title: 'Tennis',
+      icon: _iconForKey('tennis_ball'),
+    ),
+    ActivityOption(
+      id: 'boxing',
+      title: 'Boxing',
+      icon: _iconForKey('boxing_glove'),
+    ),
+    ActivityOption(
+      id: 'meditation',
+      title: 'Meditation',
+      icon: _iconForKey('sparkles'),
+    ),
+    ActivityOption(
+      id: 'breathwork',
+      title: 'Breathwork',
+      icon: _iconForKey('wind'),
+    ),
+    ActivityOption(
+      id: 'soundbath',
+      title: 'Soundbath',
+      icon: _iconForKey('sound_wave'),
+    ),
+    ActivityOption(
+      id: 'ice_plunge',
+      title: 'Ice plunge',
+      icon: _iconForKey('snowflake'),
+    ),
+    ActivityOption(
+      id: 'sauna',
+      title: 'Sauna',
+      icon: _iconForKey('thermometer_hot'),
+    ),
+    ActivityOption(
+      id: 'golf',
+      title: 'Golf',
+      icon: _iconForKey('golf_flag'),
+    ),
+    ActivityOption(
+      id: 'barre',
+      title: 'Barre',
+      icon: _iconForKey('ballet'),
     ),
     ActivityOption(
       id: 'cycling',
       title: 'Cycling',
-      icon: Icons.directions_bike_rounded,
+      icon: _iconForKey('bike'),
     ),
     ActivityOption(
-      id: 'swimming',
-      title: 'Swimming',
-      icon: Icons.pool_rounded,
+      id: 'bootcamp',
+      title: 'Bootcamp',
+      icon: _iconForKey('whistle'),
     ),
     ActivityOption(
-      id: 'mobility',
-      title: 'Mobility',
-      icon: Icons.accessibility_new_rounded,
+      id: 'cross_fit',
+      title: 'CrossFit',
+      icon: _iconForKey('kettlebell'),
+    ),
+    ActivityOption(
+      id: 'martial_arts',
+      title: 'Martial arts',
+      icon: _iconForKey('martial_arts'),
+    ),
+    ActivityOption(
+      id: 'recovery',
+      title: 'Recovery',
+      icon: _iconForKey('heart_pulse'),
     ),
   ];
 
+  late List<ActivityOption> _activities;
   late final Set<String> _selectedIds;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _activities = List<ActivityOption>.from(_defaultActivities);
     _selectedIds = Set<String>.from(widget.initialSelectedIds ?? const []);
+    _syncCatalogFromBackend();
+  }
+
+  Future<void> _syncCatalogFromBackend() async {
+    try {
+      final remoteItems = await CredsApiService.instance.getActivitiesCatalog();
+      if (!mounted || remoteItems.isEmpty) return;
+
+      final mapped = remoteItems
+          .map(
+            (item) => ActivityOption(
+              id: item.code,
+              title: item.label,
+              icon: _iconForKey(item.iconKey),
+            ),
+          )
+          .toList();
+
+      setState(() {
+        _activities = mapped;
+      });
+    } on CredsApiException catch (e) {
+      if (!e.isNetworkOrOfflineError) {
+        debugPrint('⚠️ Error cargando catálogo remoto de actividades: ${e.message}');
+      }
+    } catch (_) {
+      // Mantiene el catálogo oficial local en modo offline/test.
+    }
   }
 
   void _toggleActivity(String id) {
@@ -121,13 +241,17 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     return 'Continue with $count activities';
   }
 
-  void _handleContinue() {
+  Future<void> _handleContinue() async {
     if (_selectedIds.isEmpty) return;
 
     setState(() => _isLoading = true);
     final selectedList = _selectedIds.toList();
 
-    Future.delayed(const Duration(milliseconds: 400), () {
+    try {
+      await CredsApiService.instance.updatePreferences(
+        activityCodes: selectedList,
+      );
+
       if (!mounted) return;
       setState(() => _isLoading = false);
 
@@ -138,8 +262,39 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           context,
           'Actividades guardadas (${selectedList.length})',
         );
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
+        );
       }
-    });
+    } on CredsApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (e.isNetworkOrOfflineError &&
+          CredsApiService.instance.offlineFallbackEnabled) {
+        debugPrint('⚠️ Backend offline en ActivitiesScreen: ${e.message}');
+        if (widget.onContinue != null) {
+          widget.onContinue!(selectedList);
+        } else {
+          AppFeedback.showSuccess(
+            context,
+            'Actividades guardadas (${selectedList.length})',
+          );
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      AppFeedback.showError(context, e.message);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      AppFeedback.showError(context, 'Error al guardar actividades: $e');
+    }
   }
 
   @override
@@ -187,7 +342,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          final activity = _defaultActivities[index];
+                          final activity = _activities[index];
                           final isSelected = _selectedIds.contains(activity.id);
                           return _ActivityCard(
                             activity: activity,
@@ -195,7 +350,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                             onTap: () => _toggleActivity(activity.id),
                           );
                         },
-                        childCount: _defaultActivities.length,
+                        childCount: _activities.length,
                       ),
                     ),
                   ),

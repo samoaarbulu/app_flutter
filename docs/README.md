@@ -32,15 +32,22 @@ Bienvenido a la documentación técnica oficial de **Creds**. Este repositorio c
      - Opción 4: Emblema (Giro 3D en perspectiva).
 
 5. [**05. Pantallas y Flujo Completo de Onboarding**](05_pantallas_y_flujo_onboarding.md)
-   - Especificación detallada de las 8 pantallas construidas:
+   - Especificación detallada de las pantallas de Onboarding, Login (`SignInScreen`) y `HomeScreen`:
      1. `PreloadingScreen`: Animación 3D Float del wordmark `creds` en escala de grises.
      2. `PresentationScreen`: Video en bucle de fondo con gradiente y CTA "Get started".
      3. `AuthLandingScreen`: "Build your Creds", Google, Apple y Email.
-     4. `CreateAccountScreen`: Formulario con validación de contraseña.
-     5. `VerifyEmailScreen`: Verificación OTP con `AppOtpSection` (6 casillas, temporizador y aviso).
-     6. `AddPhotoScreen`: Selector circular de foto de perfil.
-     7. `SetupProfileScreen`: Configuración de Username, teléfono y nombre completo.
-     8. `LocationPermissionScreen`: Permiso de ubicación con badge circular.
+     4. `SignInScreen`: Inicio de sesión "Welcome back" con Email/Password o Google.
+     5. `CreateAccountScreen`: Formulario con validación de contraseña y envío OTP.
+     6. `VerifyEmailScreen`: Verificación OTP con `AppOtpSection` (6 casillas, temporizador y aviso).
+     7. `AddPhotoScreen`: Selector circular de foto de perfil.
+     8. `SetupProfileScreen`: Configuración de Username, teléfono y nombre completo.
+     9. `LocationPermissionScreen`: Permiso de ubicación con badge circular.
+     10. `ActivitiesScreen`: Selección múltiple del catálogo oficial de 22 disciplinas.
+     11. `HomeScreen`: Punto de aterrizaje tras completar onboarding (`onboardingStep == 'completed'`).
+
+6. [**06. Integración con Backend CREDS Core API (Hito 1)**](06_integracion_apis_backend_m1.md)
+   - Cliente singleton `CredsApiService` (`/v1/auth/*` y `/v1/users/*`), mapeo de `onboardingStep` con `OnboardingNavigator` y catálogo oficial de 22 `activity_types`.
+   - Configuración de `--dart-define=API_BASE_URL=...` y modo resiliente para `flutter test` y revisión UI offline.
 
 ---
 

@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/constants/country_codes.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/app_rem.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_header.dart';
-import '../../../../shared/widgets/app_text_field.dart';
-import '../../services/auth_service.dart';
+import '../../../core/constants/country_codes.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
+import '../../../core/utils/app_rem.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_header.dart';
+import '../../../shared/widgets/app_text_field.dart';
+import '../../auth/services/auth_service.dart';
+import '../../../core/services/creds_api_service.dart';
 import '../widgets/country_picker_bottom_sheet.dart';
 import 'location_permission_screen.dart';
 
@@ -104,20 +106,30 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
   void initState() {
     super.initState();
     final user = AuthService.instance.currentUser;
+    final apiUser = CredsApiService.instance.currentUser;
 
-    // 1. Obtener First name y Last name desde la cuenta de Google (o Figma por defecto)
-    String defaultFirstName = widget.initialFirstName ?? 'Ana';
-    String defaultLastName = widget.initialLastName ?? 'Torres';
-    if (user?.displayName != null && user!.displayName!.trim().isNotEmpty) {
+    // 1. Obtener First name y Last name desde backend, Google o Figma por defecto
+    String defaultFirstName =
+        widget.initialFirstName ?? apiUser?.firstName ?? 'Ana';
+    String defaultLastName =
+        widget.initialLastName ?? apiUser?.lastName ?? 'Torres';
+    if (widget.initialFirstName == null &&
+        apiUser?.firstName == null &&
+        user?.displayName != null &&
+        user!.displayName!.trim().isNotEmpty) {
       final parts = user.displayName!.trim().split(' ');
       defaultFirstName = parts.first;
       defaultLastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     }
 
     // 2. Obtener Username sugerido asegurando el prefijo '@'
-    String defaultUsername = widget.initialUsername ?? 'ana.entrena';
-    if (user?.email != null && user!.email!.contains('@')) {
-      defaultUsername = user.email!.split('@').first;
+    String defaultUsername =
+        widget.initialUsername ?? apiUser?.username ?? 'ana.entrena';
+    if (widget.initialUsername == null && apiUser?.username == null) {
+      final emailSource = apiUser?.email ?? user?.email;
+      if (emailSource != null && emailSource.contains('@')) {
+        defaultUsername = emailSource.split('@').first;
+      }
     }
     if (!defaultUsername.startsWith('@')) {
       defaultUsername = '@$defaultUsername';
@@ -232,16 +244,46 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
   bool get _isUsernameValid =>
       _validateUsername(_usernameController.text) == null;
 
-  void _handleSaveAndContinue() {
+  Future<void> _handleSaveAndContinue() async {
     if (!_isFormValid) {
       return;
     }
 
     setState(() => _isLoading = true);
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
+    final cleanedUsername = _usernameController.text
+        .trim()
+        .replaceFirst(RegExp(r'^@+'), '');
+    final phoneNumber =
+        '${_selectedCountry.dialCode}${_phoneController.text.trim()}';
+
+    try {
+      await CredsApiService.instance.setupProfile(
+        username: cleanedUsername,
+        phoneNumber: phoneNumber,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (widget.onSaveAndContinue != null) {
+        widget.onSaveAndContinue!();
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const LocationPermissionScreen(),
+          ),
+        );
+      }
+    } on CredsApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (e.isNetworkOrOfflineError &&
+          CredsApiService.instance.offlineFallbackEnabled) {
+        debugPrint('⚠️ Backend offline en SetupProfileScreen: ${e.message}');
         if (widget.onSaveAndContinue != null) {
           widget.onSaveAndContinue!();
         } else {
@@ -251,8 +293,15 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
             ),
           );
         }
+        return;
       }
-    });
+
+      AppFeedback.showError(context, e.message);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      AppFeedback.showError(context, 'Error al guardar el perfil: $e');
+    }
   }
 
   Future<void> _openCountryPicker() async {
