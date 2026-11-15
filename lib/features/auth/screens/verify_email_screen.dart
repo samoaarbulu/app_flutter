@@ -40,21 +40,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   // -------------------------------------------------------------
   // 1. ESTADO Y CONTROLADORES (<script setup>)
   // -------------------------------------------------------------
-  late String _enteredCode;
-  late final List<String> _initialOtpValues;
+  String _enteredCode = '';
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    final devCode = widget.devOtpCode;
-    if (devCode != null && devCode.length == 6) {
-      _enteredCode = devCode;
-      _initialOtpValues = devCode.split('');
-    } else {
-      _enteredCode = '482916';
-      _initialOtpValues = const ['4', '8', '2', '9', '1', '6'];
-    }
+    // Nunca prellenar el OTP en pantalla (ni en desarrollo ni en producción).
+    // El usuario siempre debe ingresar manualmente el código recibido en su correo.
   }
 
   Future<void> _handleVerify() async {
@@ -175,7 +168,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       SizedBox(height: 1.75.rem), // 28 px
                       // 3. Sección OTP completa (Componente global AppOtpSection)
                       AppOtpSection(
-                        initialValues: _initialOtpValues,
                         onChanged: (val) => _enteredCode = val,
                         onCompleted: (val) {
                           _enteredCode = val;

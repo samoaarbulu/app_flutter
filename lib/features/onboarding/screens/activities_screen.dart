@@ -7,8 +7,8 @@ import '../../../core/utils/app_feedback.dart';
 import '../../../core/utils/app_rem.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_header.dart';
-import '../../home/screens/home_screen.dart';
 import '../../../core/services/creds_api_service.dart';
+import 'your_places_screen.dart';
 
 /// Modelo inmutable para representar una actividad física en el onboarding.
 class ActivityOption {
@@ -241,6 +241,21 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     return 'Continue with $count activities';
   }
 
+  void _finishContinue(List<String> selectedList) {
+    if (widget.onContinue != null) {
+      widget.onContinue!(selectedList);
+      return;
+    }
+
+    AppFeedback.showSuccess(
+      context,
+      'Actividades guardadas (${selectedList.length})',
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const YourPlacesScreen()),
+    );
+  }
+
   Future<void> _handleContinue() async {
     if (_selectedIds.isEmpty) return;
 
@@ -254,19 +269,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
       if (!mounted) return;
       setState(() => _isLoading = false);
-
-      if (widget.onContinue != null) {
-        widget.onContinue!(selectedList);
-      } else {
-        AppFeedback.showSuccess(
-          context,
-          'Actividades guardadas (${selectedList.length})',
-        );
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-          (route) => false,
-        );
-      }
+      _finishContinue(selectedList);
     } on CredsApiException catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -274,18 +277,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       if (e.isNetworkOrOfflineError &&
           CredsApiService.instance.offlineFallbackEnabled) {
         debugPrint('⚠️ Backend offline en ActivitiesScreen: ${e.message}');
-        if (widget.onContinue != null) {
-          widget.onContinue!(selectedList);
-        } else {
-          AppFeedback.showSuccess(
-            context,
-            'Actividades guardadas (${selectedList.length})',
-          );
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-          );
-        }
+        _finishContinue(selectedList);
         return;
       }
 

@@ -26,8 +26,10 @@ lib/
     │   ├── screens/                  # AuthLandingScreen, SignInScreen, CreateAccountScreen, VerifyEmailScreen
     │   └── services/                 # AuthService (Google Sign-In y Firebase)
     ├── onboarding/                   # Configuración guiada del perfil inicial
+    │   ├── models/                   # Modelos del onboarding (OnboardingPlace, RankedPlace)
     │   ├── navigation/               # OnboardingNavigator (enrutado según onboardingStep)
-    │   ├── screens/                  # AddPhotoScreen, SetupProfileScreen, LocationPermissionScreen, ActivitiesScreen
+    │   ├── screens/                  # AddPhotoScreen, SetupProfileScreen, LocationPermissionScreen,
+    │   │                             # ActivitiesScreen, YourPlacesScreen, ComparePlacesScreen, FirstRankingScreen
     │   └── widgets/                  # CountryPickerBottomSheet
     └── home/                         # Módulo principal de la app
         └── screens/                  # HomeScreen

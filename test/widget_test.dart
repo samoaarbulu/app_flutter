@@ -103,8 +103,15 @@ void main() {
     expect(find.text('Verify email'), findsOneWidget);
     expect(find.text('Change email address'), findsOneWidget);
 
-    // 4. Ir a AddPhotoScreen al presionar "Verify email"
-    await tester.tap(find.text('Verify email'));
+    // 4. Ingresar los 6 dígitos OTP (las casillas inician vacías) -> navega a AddPhotoScreen
+    final otpFields = find.descendant(
+      of: find.byType(AppOtpSection),
+      matching: find.byType(TextField),
+    );
+    expect(otpFields, findsNWidgets(6));
+    for (var i = 0; i < 6; i++) {
+      await tester.enterText(otpFields.at(i), '${i + 1}');
+    }
     await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
     expect(find.text('PROFILE'), findsOneWidget);

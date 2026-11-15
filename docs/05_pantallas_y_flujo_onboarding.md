@@ -20,7 +20,11 @@ flowchart TD
     F -->|Save and continue o Not now| G["7. SetupProfileScreen (Set up your profile)"]
     G -->|Save and continue| H["8. LocationPermissionScreen (Location permission)"]
     H -->|Enable permissions o Do this later| ACT["9. ActivitiesScreen (22 disciplinas oficiales)"]
-    ACT -->|Continue| HOME["10. HomeScreen (Onboarding completed)"]
+    ACT -->|Continue| YP["10. YourPlacesScreen (08.01 - Min. 3 lugares)"]
+    YP -->|Start ranking| CMP["11. ComparePlacesScreen (08.02-04 - 3 duelos)"]
+    CMP -->|3 rondas| FR["12. FirstRankingScreen (08.05 - Primer ranking)"]
+    YP -->|Do this later| HOME["HomeScreen (Temporal hasta Paso 09 y 10)"]
+    FR -->|Save and continue| HOME
     SI -->|Login / onboardingStep| HOME
 ```
 
@@ -84,7 +88,7 @@ flowchart TD
   * Encabezado: `AppHeader(title: 'Check your email', description: 'We sent a 6-digit code to ana.torres@correo.com')`.
   * **Componente todo-en-uno `AppOtpSection`:**
     * Etiqueta: `"Verification code"`.
-    * 6 casillas OTP estilizadas de 48px de ancho con auto-avance y soporte de backspace.
+    * 6 casillas OTP estilizadas de 48px de ancho con auto-avance y soporte de backspace. **Siempre inician vacías** (nunca se prellenan con `devOtpCode` ni valores fijos, ni en desarrollo ni en producción).
     * Fila de reenvío: `"Didn't get the code?"` y temporizador `"Resend in 00:28"`.
     * Tarjeta informativa: Icono de información y aviso de expiración en 10 minutos.
   * Botón principal: `"Verify email"`.
@@ -176,11 +180,27 @@ flowchart TD
     * **Texto y estado dinámico:** Permanece deshabilitado con texto `"Continue"` si hay `0` seleccionadas; se habilita automáticamente mostrando `"Continue with 1 activity"` o `"Continue with N activities"`.
 * **Catálogo e Integración Backend:**
   * Renderiza el catálogo oficial de **22 actividades** sincronizadas con PostgreSQL (`auth_core.activity_types`) mediante `GET /v1/users/activities/catalog` y mantiene la lista completa como respaldo offline.
-  * Al pulsar `"Continue with N activities"`, envía `activityCodes` a `PATCH /v1/users/preferences` (marcando `profileCompleted = true` en backend) y navega a `HomeScreen`.
+  * Al pulsar `"Continue with N activities"`, envía `activityCodes` a `PATCH /v1/users/preferences` y navega a `YourPlacesScreen` (Paso 08).
 
 ---
 
-### 10. `SignInScreen` (`lib/features/auth/screens/sign_in_screen.dart`) y `HomeScreen` (`lib/features/home/screens/home_screen.dart`)
+### 10. Paso 08 — Primer Ranking / Duelos Iniciales (`08 duelos/`)
+Flujo de 3 pantallas que construye el primer ranking del usuario antes de los pasos finales `09` y `10`:
+
+1. **`YourPlacesScreen`** (`lib/features/onboarding/screens/your_places_screen.dart` — `08 duelos/01.png`):
+   * Top Bar `YOUR PLACES`, encabezado `"Start with places you've tried"` y buscador (`AppTextField`) para filtrar y agregar lugares desde `OnboardingPlace.sampleCatalog`.
+   * Lista `PLACES` con contador (`N added`) y eliminación individual.
+   * Botón `"Start ranking"` (habilitado solo con **3 o más lugares**) y enlace `"Do this later"` para omitir los duelos.
+2. **`ComparePlacesScreen`** (`lib/features/onboarding/screens/compare_places_screen.dart` — `08 duelos/02-04.png`):
+   * Top Bar `COMPARE`, indicador `COMPARISON X OF 3` con barra segmentada de 3 pasos y pregunta `"Which was better?"`.
+   * Dos tarjetas comparables frente a frente (`_ComparePlaceCard`) con resaltado al elegir ganador, retroceso por ronda y botón `"About the same"` para empates.
+3. **`FirstRankingScreen`** (`lib/features/onboarding/screens/first_ranking_screen.dart` — `08 duelos/05.png`):
+   * Encabezado `"Your first ranking is in"` y lista `BASED ON YOUR CHOICES` ordenada de `01` (con insignia de corona oscura) a `03`, mostrando comparaciones ganadas.
+   * Botón `"Save and continue"` *(temporalmente navega a `HomeScreen` hasta implementar el Paso 09 `UsefulPermissionsScreen` y Paso 10 `FollowSuggestionsScreen`)*.
+
+---
+
+### 11. `SignInScreen` (`lib/features/auth/screens/sign_in_screen.dart`) y `HomeScreen` (`lib/features/home/screens/home_screen.dart`)
 * **`SignInScreen`:** Pantalla `01B Sign in` conectada a `POST /v1/auth/login` y Google Sign-In, que redirige automáticamente según `onboardingStep` usando `OnboardingNavigator`.
 * **`HomeScreen`:** Pantalla de destino una vez completado el onboarding, mostrando el resumen de usuario y cierre de sesión (`AuthService.instance.signOut()`).
 

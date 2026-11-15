@@ -43,7 +43,8 @@ Bienvenido a la documentación técnica oficial de **Creds**. Este repositorio c
      8. `SetupProfileScreen`: Configuración de Username, teléfono y nombre completo.
      9. `LocationPermissionScreen`: Permiso de ubicación con badge circular.
      10. `ActivitiesScreen`: Selección múltiple del catálogo oficial de 22 disciplinas.
-     11. `HomeScreen`: Punto de aterrizaje tras completar onboarding (`onboardingStep == 'completed'`).
+     11. **Paso 08 (`08 duelos`):** `YourPlacesScreen` (mín. 3 lugares), `ComparePlacesScreen` (3 duelos 1 a 1) y `FirstRankingScreen` (primer ranking).
+     12. `HomeScreen`: Punto de aterrizaje tras completar onboarding (`onboardingStep == 'completed'`).
 
 6. [**06. Integración con Backend CREDS Core API (Hito 1)**](06_integracion_apis_backend_m1.md)
    - Cliente singleton `CredsApiService` (`/v1/auth/*` y `/v1/users/*`), mapeo de `onboardingStep` con `OnboardingNavigator` y catálogo oficial de 22 `activity_types`.
