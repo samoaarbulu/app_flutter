@@ -186,6 +186,7 @@ Implementada mediante **getters dinámicos** con `GoogleFonts.poppins` para gara
 
 6. **`AppLinkText`:**
    * Texto mixto interactivo (`"Already have an account? Sign in"`), con estilos separados para prefijo y acción.
+   * Normaliza automáticamente los espacios entre `prefixText` y `actionText` garantizando exactamente un espacio separador (evitando concatenaciones accidentales como `"account?Sign in"`).
 
 7. **`AppGoogleIcon`:**
    * Isotipo oficial monocromático de Google ("G" bold) extraído fielmente del diseño de Figma.

@@ -165,3 +165,27 @@ Tras una autenticación exitosa con Google, el objeto `credential.user` provee l
 ### Manejo de CORS para la Foto de Google en Flutter Web:
 En entornos de navegador (como Chrome en desarrollo), el motor CanvasKit bloquea peticiones de imágenes directas a `lh3.googleusercontent.com`. El proyecto implementa la función `_resolvePhotoUrl` en `AddPhotoScreen` que aplica un proxy transparente con cabeceras CORS en Web (`kIsWeb`), mientras que en Android/iOS consume la URL nativa directamente.
 
+---
+
+## 6. Sign in with Apple — Guía de Implementación y Requisitos
+
+Para habilitar el botón **"Continue with Apple"** en `AuthLandingScreen` y `SignInScreen`, se deben completar los siguientes 5 pasos:
+
+1. **Membresía Apple Developer Program ($99 USD/año):**
+   * Requisito indispensable de Apple para generar identificadores y certificados criptográficos de autenticación.
+2. **Apple Developer Portal (`Certificates, Identifiers & Profiles`):**
+   * En el App ID (ej. `com.getcreds.app`), activar el capability **Sign in with Apple**.
+   * Para soporte adicional en Android/Web: registrar un **Services ID**, configurar dominios/Redirect URIs y generar una **Private Key (`.p8`)** anotando el **Key ID** y **Team ID**.
+3. **Xcode (`ios/Runner.xcworkspace`):**
+   * En **Signing & Capabilities** añadir **Sign in with Apple** (genera `Runner.entitlements`).
+   * Garantizar `iOS Deployment Target >= 13.0`.
+4. **Firebase / Backend:**
+   * En **Firebase Console ➔ Authentication ➔ Sign-in method**, habilitar el proveedor **Apple** (y cargar Service ID, Team ID, Key ID y `.p8` si se soporta Android/Web).
+5. **Integración en Flutter (`AuthService`):**
+   * Usar `sign_in_with_apple` o `OAuthProvider('apple.com')` en `firebase_auth` enviando el `identityToken` y `authorizationCode` al backend (`POST /v1/auth/apple` o Firebase).
+
+### ⚠️ Particularidades Críticas de Apple
+* **Nombre y correo solo en el primer inicio de sesión:** Apple únicamente envía `fullName` y `email` la **primera vez** que el usuario autoriza la app. En inicios posteriores solo retorna el identificador (`userIdentifier`), por lo que es obligatorio persistirlos inmediatamente en base de datos.
+* **Hide My Email (Relay privado):** La app y el backend deben aceptar correos anonimizados del formato `@privaterelay.appleid.com`.
+* **Política App Store (Guideline 4.8):** Al ofrecer login con Google, Apple exige obligatoriamente ofrecer también **Sign in with Apple** con igual prominencia visual para aprobar la publicación en iOS.
+

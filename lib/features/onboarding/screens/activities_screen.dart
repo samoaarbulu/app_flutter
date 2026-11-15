@@ -32,20 +32,13 @@ class ActivitiesScreen extends StatefulWidget {
   final ValueChanged<List<String>>? onContinue;
   final List<String>? initialSelectedIds;
 
-  const ActivitiesScreen({
-    super.key,
-    this.onContinue,
-    this.initialSelectedIds,
-  });
+  const ActivitiesScreen({super.key, this.onContinue, this.initialSelectedIds});
 
   @override
   State<ActivitiesScreen> createState() => _ActivitiesScreenState();
 }
 
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
-<<<<<<< HEAD:lib/features/auth/presentation/screens/activities_screen.dart
-  List<ActivityOption> get _defaultActivities => [
-=======
   static IconData _iconForKey(String iconKey) {
     return switch (iconKey) {
       'dumbbell' => Icons.fitness_center_outlined,
@@ -75,27 +68,18 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   }
 
   static final List<ActivityOption> _defaultActivities = [
->>>>>>> 13d346a3595392f4d2cddc5d0e4c7b8eac6a0d80:lib/features/onboarding/screens/activities_screen.dart
     ActivityOption(
       id: 'strength_training',
       title: 'Strength training',
       icon: _iconForKey('dumbbell'),
     ),
-    ActivityOption(
-      id: 'hiit',
-      title: 'HIIT',
-      icon: _iconForKey('flame'),
-    ),
+    ActivityOption(id: 'hiit', title: 'HIIT', icon: _iconForKey('flame')),
     ActivityOption(
       id: 'pilates',
       title: 'Pilates',
       icon: _iconForKey('reformer'),
     ),
-    ActivityOption(
-      id: 'yoga',
-      title: 'Yoga',
-      icon: _iconForKey('lotus'),
-    ),
+    ActivityOption(id: 'yoga', title: 'Yoga', icon: _iconForKey('lotus')),
     ActivityOption(
       id: 'running',
       title: 'Running',
@@ -151,21 +135,9 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       title: 'Sauna',
       icon: _iconForKey('thermometer_hot'),
     ),
-    ActivityOption(
-      id: 'golf',
-      title: 'Golf',
-      icon: _iconForKey('golf_flag'),
-    ),
-    ActivityOption(
-      id: 'barre',
-      title: 'Barre',
-      icon: _iconForKey('ballet'),
-    ),
-    ActivityOption(
-      id: 'cycling',
-      title: 'Cycling',
-      icon: _iconForKey('bike'),
-    ),
+    ActivityOption(id: 'golf', title: 'Golf', icon: _iconForKey('golf_flag')),
+    ActivityOption(id: 'barre', title: 'Barre', icon: _iconForKey('ballet')),
+    ActivityOption(id: 'cycling', title: 'Cycling', icon: _iconForKey('bike')),
     ActivityOption(
       id: 'bootcamp',
       title: 'Bootcamp',
@@ -191,11 +163,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       title: 'Boxing',
       icon: Icons.sports_mma_outlined,
     ),
-    ActivityOption(
-      id: 'hiit',
-      title: 'HIIT',
-      icon: Icons.bolt_rounded,
-    ),
+    ActivityOption(id: 'hiit', title: 'HIIT', icon: Icons.bolt_rounded),
     ActivityOption(
       id: 'climbing',
       title: 'Climbing',
@@ -206,11 +174,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       title: 'Calisthenics',
       icon: Icons.sports_gymnastics_rounded,
     ),
-    ActivityOption(
-      id: 'rowing',
-      title: 'Rowing',
-      icon: Icons.rowing_rounded,
-    ),
+    ActivityOption(id: 'rowing', title: 'Rowing', icon: Icons.rowing_rounded),
     ActivityOption(
       id: 'dance',
       title: 'Dance fitness',
@@ -250,7 +214,9 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       });
     } on CredsApiException catch (e) {
       if (!e.isNetworkOrOfflineError) {
-        debugPrint('⚠️ Error cargando catálogo remoto de actividades: ${e.message}');
+        debugPrint(
+          '⚠️ Error cargando catálogo remoto de actividades: ${e.message}',
+        );
       }
     } catch (_) {
       // Mantiene el catálogo oficial local en modo offline/test.
@@ -355,37 +321,29 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                     sliver: SliverToBoxAdapter(
                       child: const AppHeader(
                         title: 'How do you like to train?',
-                        description:
-                            'Choose your usual activities. You can select more than one.',
+                        description: 'Choose your usual activities. You can select more than one.',
                       ),
                     ),
                   ),
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      1.5.rem,
-                      0,
-                      1.5.rem,
-                      1.5.rem,
-                    ),
+                    padding: EdgeInsets.fromLTRB(1.5.rem, 0, 1.5.rem, 1.5.rem),
                     sliver: SliverGrid(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 0.75.rem, // 12 px
                         mainAxisSpacing: 0.75.rem, // 12 px
-                        mainAxisExtent: 5.75.rem, // 92 px (cards más angostas/compactas)
+                        mainAxisExtent:
+                            5.75.rem, // 92 px (cards más angostas/compactas)
                       ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final activity = _activities[index];
-                          final isSelected = _selectedIds.contains(activity.id);
-                          return _ActivityCard(
-                            activity: activity,
-                            isSelected: isSelected,
-                            onTap: () => _toggleActivity(activity.id),
-                          );
-                        },
-                        childCount: _activities.length,
-                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final activity = _activities[index];
+                        final isSelected = _selectedIds.contains(activity.id);
+                        return _ActivityCard(
+                          activity: activity,
+                          isSelected: isSelected,
+                          onTap: () => _toggleActivity(activity.id),
+                        );
+                      }, childCount: _activities.length),
                     ),
                   ),
                 ],
@@ -429,17 +387,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   /// Pie fijo con el componente reutilizable AppButton
   Widget _buildBottomFooter() {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        1.5.rem,
-        0.75.rem,
-        1.5.rem,
-        1.0.rem,
-      ),
+      padding: EdgeInsets.fromLTRB(1.5.rem, 0.75.rem, 1.5.rem, 1.0.rem),
       decoration: const BoxDecoration(
         color: AppColors.background,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
       child: AppButton(
         text: _buttonText,
@@ -496,11 +447,7 @@ class _ActivityCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    activity.icon,
-                    size: 24,
-                    color: AppColors.textPrimary,
-                  ),
+                  Icon(activity.icon, size: 24, color: AppColors.textPrimary),
                   _SelectionCheckbox(isSelected: isSelected),
                 ],
               ),
@@ -542,10 +489,7 @@ class _SelectionCheckbox extends StatelessWidget {
         borderRadius: BorderRadius.circular(7.0),
         border: isSelected
             ? null
-            : Border.all(
-                color: AppColors.border,
-                width: 1.5,
-              ),
+            : Border.all(color: AppColors.border, width: 1.5),
       ),
       child: isSelected
           ? const Icon(

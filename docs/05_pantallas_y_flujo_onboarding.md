@@ -164,6 +164,16 @@ flowchart TD
 
 ### 9. `ActivitiesScreen` (`lib/features/onboarding/screens/activities_screen.dart`)
 * **Concepto:** Selección múltiple de disciplinas habituales (`"How do you like to train?"`).
+* **Diseño y Componentes Reutilizados:**
+  * **Top Bar:** Botón atrás y título centrado `ACTIVITIES`.
+  * **Encabezado (`AppHeader`):** Título `"How do you like to train?"` y descripción `"Choose your usual activities. You can select more than one."`.
+  * **Cuadrícula desplazable de 2 columnas (`SliverGrid` + `BouncingScrollPhysics`):**
+    * Tarjetas compactas (`_ActivityCard`) con altura fija `5.75.rem` (`92 px`), separación de `12 px` (`0.75.rem`), padding interno `15 px × 14 px` y radio de `16 px`.
+    * Cada card muestra el icono de la actividad arriba a la izquierda, un checkbox redondeado animado (`_SelectionCheckbox`) arriba a la derecha y el nombre en la parte inferior.
+    * **Estado interactivo:** Al tocar, dispara `HapticFeedback.selectionClick()`, cambia a fondo `AppColors.inputSurface` (`#F5F5F7`) con borde `AppColors.primaryAction` (`1.8 px`) y checkmark blanco sobre fondo oscuro.
+  * **Pie fijo (`AppButton`):**
+    * Sin etiqueta auxiliar intermedia sobre el botón.
+    * **Texto y estado dinámico:** Permanece deshabilitado con texto `"Continue"` si hay `0` seleccionadas; se habilita automáticamente mostrando `"Continue with 1 activity"` o `"Continue with N activities"`.
 * **Catálogo e Integración Backend:**
   * Renderiza el catálogo oficial de **22 actividades** sincronizadas con PostgreSQL (`auth_core.activity_types`) mediante `GET /v1/users/activities/catalog` y mantiene la lista completa como respaldo offline.
   * Al pulsar `"Continue with N activities"`, envía `activityCodes` a `PATCH /v1/users/preferences` (marcando `profileCompleted = true` en backend) y navega a `HomeScreen`.
