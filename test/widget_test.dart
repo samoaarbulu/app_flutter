@@ -17,10 +17,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // 3. Verifica elementos de la pantalla de bienvenida
-    expect(find.text('Find your place.\nCompare it your way.'), findsOneWidget);
+    expect(find.text('Where your people go'), findsOneWidget);
     expect(
       find.text(
-        'Save the gyms you know, compare your experience\nand discover your favorites.',
+        'Discover the places your people\nmove and recover.',
       ),
       findsOneWidget,
     );
@@ -31,7 +31,7 @@ void main() {
       find.byWidgetPredicate(
         (widget) =>
             widget is RichText &&
-            widget.text.toPlainText().contains('Already have an account? Sign in'),
+            widget.text.toPlainText().contains('Already have an account? Log in'),
       ),
       findsOneWidget,
     );
@@ -54,10 +54,11 @@ void main() {
     expect(find.text('Build your Creds'), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.text('Continue with Apple'), findsOneWidget);
-    expect(find.text('Continue with Email'), findsOneWidget);
+    expect(find.text('or use'), findsOneWidget);
+    expect(find.text('Continue with email'), findsOneWidget);
 
     // 2. Ir a CreateAccountScreen
-    await tester.tap(find.text('Continue with Email'));
+    await tester.tap(find.text('Continue with email'));
     await tester.pumpAndSettle();
 
     expect(find.text('Create your account'), findsOneWidget);
@@ -67,6 +68,7 @@ void main() {
     );
     expect(find.text('Email address'), findsOneWidget);
     expect(find.text('Create a password'), findsOneWidget);
+    expect(find.text('Confirm password'), findsOneWidget);
     expect(
       find.text('Use 8 or more characters, a letter and a number.'),
       findsOneWidget,
@@ -77,7 +79,7 @@ void main() {
     );
     expect(find.text('Send code'), findsOneWidget);
 
-    // Ingresar contraseña válida para habilitar el botón y ocultar el helper text
+    // Ingresar contraseña válida y confirmación para habilitar el botón y ocultar el helper text
     final passwordField =
         find.widgetWithText(AppTextField, 'Create a password');
     final passwordInput = find.descendant(
@@ -85,6 +87,13 @@ void main() {
       matching: find.byType(TextFormField),
     );
     await tester.enterText(passwordInput, 'password123');
+
+    final confirmField = find.widgetWithText(AppTextField, 'Confirm password');
+    final confirmInput = find.descendant(
+      of: confirmField,
+      matching: find.byType(TextFormField),
+    );
+    await tester.enterText(confirmInput, 'password123');
     await tester.pumpAndSettle();
 
     // El helper text se oculta automáticamente al ser válida
@@ -116,7 +125,10 @@ void main() {
 
     expect(find.text('PROFILE'), findsOneWidget);
     expect(find.text('Add your photo'), findsOneWidget);
-    expect(find.text('Lorem ipsum dolor'), findsOneWidget);
+    expect(
+      find.text('Add a photo so your community can recognize you.'),
+      findsOneWidget,
+    );
     expect(find.text('Upload your profile photo'), findsOneWidget);
     expect(find.text('Optional · You can change it later'), findsOneWidget);
     expect(find.text('Save and continue'), findsOneWidget);
@@ -157,14 +169,14 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
     expect(find.text('LOCATION'), findsOneWidget);
-    expect(find.text('Location permission'), findsOneWidget);
+    expect(find.text('Find your next spot'), findsOneWidget);
     expect(
       find.text(
-        'Enable location access for a more detailed map with\nthe best recommendations.',
+        'Use your location to find nearby spots, see where your people go, and get better recommendations wherever you are.',
       ),
       findsOneWidget,
     );
-    expect(find.text('Enable permissions'), findsOneWidget);
+    expect(find.text('Use my location'), findsOneWidget);
     expect(find.text('Do this later'), findsOneWidget);
 
     // 7. Volver a SetupProfileScreen

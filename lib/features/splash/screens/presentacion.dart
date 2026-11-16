@@ -192,8 +192,8 @@ class _PresentationScreenState extends State<PresentationScreen>
   /// Encabezado con título principal y texto de apoyo descriptivo usando AppHeader.centered
   Widget _buildEncabezado() {
     return const AppHeader.centered(
-      title: 'Find your place.\nCompare it your way.',
-      description: 'Save the gyms you know, compare your experience\nand discover your favorites.',
+      title: 'Where your people go',
+      description: 'Discover the places your people\nmove and recover.',
     );
   }
 
@@ -215,10 +215,10 @@ class _PresentationScreenState extends State<PresentationScreen>
         ),
 
         SizedBox(height: 1.0.rem), // 16 px
-        // Texto de apoyo: Enlace interactivo global "Already have an account? Sign in"
+        // Texto de apoyo: Enlace interactivo global "Already have an account? Log in"
         AppLinkText(
           prefixText: 'Already have an account? ',
-          actionText: 'Sign in',
+          actionText: 'Log in',
           onTap:
               widget.onSignIn ??
               () {

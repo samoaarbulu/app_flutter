@@ -5,8 +5,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_rem.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_header.dart';
-import '../../home/screens/home_screen.dart';
 import '../models/onboarding_place.dart';
+import 'useful_permissions_screen.dart';
 
 /// Pantalla de resultado del primer ranking (`08 duelos/05.png`).
 ///
@@ -28,10 +28,8 @@ class FirstRankingScreen extends StatelessWidget {
       return;
     }
 
-    // TODO(onboarding-step-09): Navegar a UsefulPermissionsScreen (Paso 09) y luego FollowSuggestionsScreen (Paso 10).
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const UsefulPermissionsScreen()),
     );
   }
 

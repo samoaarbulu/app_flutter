@@ -42,6 +42,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   // -------------------------------------------------------------
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
+  late final TextEditingController _confirmPasswordController;
 
   static final RegExp _emailRegExp = RegExp(
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
@@ -59,9 +60,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     _passwordController = TextEditingController(
       text: widget.initialPassword ?? '',
     );
+    _confirmPasswordController = TextEditingController(
+      text: widget.initialPassword ?? '',
+    );
 
     _emailController.addListener(_onFieldChanged);
     _passwordController.addListener(_onFieldChanged);
+    _confirmPasswordController.addListener(_onFieldChanged);
     _isButtonEnabled = _isFormValid;
   }
 
@@ -69,8 +74,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   void dispose() {
     _emailController.removeListener(_onFieldChanged);
     _passwordController.removeListener(_onFieldChanged);
+    _confirmPasswordController.removeListener(_onFieldChanged);
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -117,6 +124,20 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool get _isPasswordValid =>
       _validatePassword(_passwordController.text) == null;
 
+  String? _validateConfirmPassword(String? value) {
+    final text = value ?? '';
+    if (text.isEmpty) {
+      return 'Please confirm your password';
+    }
+    if (text != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
+  bool get _isConfirmPasswordValid =>
+      _validateConfirmPassword(_confirmPasswordController.text) == null;
+
   /// Helper text dinámico: se oculta cuando la contraseña ya cumple
   String? get _effectivePasswordHelperText {
     if (_isPasswordValid) {
@@ -126,7 +147,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   bool get _isFormValid =>
-      _validateEmail(_emailController.text) == null && _isPasswordValid;
+      _validateEmail(_emailController.text) == null &&
+      _isPasswordValid &&
+      _isConfirmPasswordValid;
 
   Future<void> _handleSendCode() async {
     if (!_isFormValid) {
@@ -304,8 +327,26 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         AppTextField.password(
           controller: _passwordController,
           helperText: _effectivePasswordHelperText,
+          textInputAction: TextInputAction.next,
           validateOnFocusLoss: true,
           focusLossValidator: _validatePassword,
+        ),
+
+        SizedBox(height: 1.25.rem), // 20 px
+
+        // 3. Campo Confirm password (debe coincidir con la contraseña)
+        AppTextField.password(
+          controller: _confirmPasswordController,
+          label: 'Confirm password',
+          hintText: 'Confirm your password',
+          textInputAction: TextInputAction.done,
+          validateOnFocusLoss: true,
+          focusLossValidator: _validateConfirmPassword,
+          onFieldSubmitted: (_) {
+            if (_isButtonEnabled) {
+              _handleSendCode();
+            }
+          },
         ),
       ],
     );

@@ -6,3 +6,4 @@ export 'app_link_text.dart';
 export 'app_otp_input.dart';
 export 'app_otp_section.dart';
 export 'app_text_field.dart';
+export 'user_avatar.dart';

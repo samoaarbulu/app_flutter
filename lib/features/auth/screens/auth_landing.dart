@@ -193,17 +193,32 @@ class _AuthLandingScreenState extends State<AuthLandingScreen> {
               () => AppFeedback.show(context, 'Continue with Apple presionado'),
         ),
 
-        SizedBox(height: 1.0.rem), // 16 px
+        SizedBox(height: 1.5.rem), // 24 px
 
-        // 3. Botón Email (conduce al flujo de Create Account)
+        // Divisor "or use"
+        Row(
+          children: [
+            const Expanded(child: Divider(color: AppColors.border)),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 0.75.rem),
+              child: Text(
+                'or use',
+                style: GoogleFonts.poppins(
+                  fontSize: 0.8125.rem,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            const Expanded(child: Divider(color: AppColors.border)),
+          ],
+        ),
+
+        SizedBox(height: 1.5.rem), // 24 px
+
+        // 3. Botón Email (oscuro, sin icono, conduce al flujo de Create Account)
         AppButton(
-          text: 'Continue with Email',
-          variant: AppButtonVariant.outline,
-          icon: const Icon(
-            Icons.mail_outline_rounded,
-            color: AppColors.textPrimary,
-            size: 22,
-          ),
+          text: 'Continue with email',
+          variant: AppButtonVariant.primary,
           onPressed: widget.onEmailSignIn ??
               () {
                 Navigator.of(context).push(

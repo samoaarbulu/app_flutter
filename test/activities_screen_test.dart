@@ -15,10 +15,10 @@ void main() {
       );
 
       expect(find.text('ACTIVITIES'), findsOneWidget);
-      expect(find.text('How do you like to train?'), findsOneWidget);
+      expect(find.text("What's in your rotation?"), findsOneWidget);
       expect(
         find.text(
-          'Choose your usual activities. You can select more than one.',
+          'Pick the activities you do or want to discover.',
         ),
         findsOneWidget,
       );
@@ -55,7 +55,7 @@ void main() {
       await tester.pumpAndSettle();
 
       var button = tester.widget<AppButton>(find.byType(AppButton));
-      expect(button.text, 'Continue with 1 activity');
+      expect(button.text, 'Continue');
       expect(button.onPressed, isNotNull);
 
       // Seleccionar 2da y 3ra actividad (asegurando visibilidad si la pantalla de test es corta)
@@ -66,7 +66,7 @@ void main() {
       await tester.pumpAndSettle();
 
       button = tester.widget<AppButton>(find.byType(AppButton));
-      expect(button.text, 'Continue with 3 activities');
+      expect(button.text, 'Continue');
 
       // Deseleccionar 1 actividad
       await tester.ensureVisible(find.text('Pilates'));
@@ -74,7 +74,7 @@ void main() {
       await tester.pumpAndSettle();
 
       button = tester.widget<AppButton>(find.byType(AppButton));
-      expect(button.text, 'Continue with 2 activities');
+      expect(button.text, 'Continue');
 
       // Confirmar envío
       await tester.tap(find.byType(AppButton));
@@ -93,11 +93,11 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Enable permissions'));
+      await tester.tap(find.text('Use my location'));
       await tester.pumpAndSettle();
 
       expect(find.text('ACTIVITIES'), findsOneWidget);
-      expect(find.text('How do you like to train?'), findsOneWidget);
+      expect(find.text("What's in your rotation?"), findsOneWidget);
     });
 
     testWidgets(
@@ -113,7 +113,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ACTIVITIES'), findsOneWidget);
-      expect(find.text('How do you like to train?'), findsOneWidget);
+      expect(find.text("What's in your rotation?"), findsOneWidget);
     });
   });
 }

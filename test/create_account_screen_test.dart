@@ -99,6 +99,31 @@ void main() {
       await tester.enterText(passwordInput, 'password123');
       await tester.pumpAndSettle();
 
+      // Sin confirmar contraseña, el botón sigue deshabilitado
+      button = tester.widget<AppButton>(buttonFinder);
+      expect(button.onPressed, isNull);
+
+      final confirmField =
+          find.widgetWithText(AppTextField, 'Confirm password');
+      final confirmInput = find.descendant(
+        of: confirmField,
+        matching: find.byType(TextFormField),
+      );
+
+      // Si no coincide, el botón sigue deshabilitado y al perder foco muestra error
+      await tester.enterText(confirmInput, 'otraClave123');
+      await tester.pumpAndSettle();
+      button = tester.widget<AppButton>(buttonFinder);
+      expect(button.onPressed, isNull);
+
+      await tester.tap(find.widgetWithText(AppTextField, 'Email address'));
+      await tester.pumpAndSettle();
+      expect(find.text('Passwords do not match'), findsOneWidget);
+
+      // Al coincidir, el botón se habilita
+      await tester.enterText(confirmInput, 'password123');
+      await tester.pumpAndSettle();
+
       // Ahora con email inicial ('ana.torres@correo.com') y password válido, el botón se habilita
       button = tester.widget<AppButton>(buttonFinder);
       expect(button.onPressed, isNotNull);
@@ -142,8 +167,9 @@ void main() {
         findsOneWidget,
       );
 
-      // 5. Corregir password
+      // 5. Corregir password y confirm password
       await tester.enterText(passwordInput, 'claveSegura2026');
+      await tester.enterText(confirmInput, 'claveSegura2026');
       await tester.pumpAndSettle();
 
       button = tester.widget<AppButton>(buttonFinder);

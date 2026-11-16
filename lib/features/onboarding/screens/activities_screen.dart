@@ -234,12 +234,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     });
   }
 
-  String get _buttonText {
-    final count = _selectedIds.length;
-    if (count == 0) return 'Continue';
-    if (count == 1) return 'Continue with 1 activity';
-    return 'Continue with $count activities';
-  }
+  String get _buttonText => 'Continue';
 
   void _finishContinue(List<String> selectedList) {
     if (widget.onContinue != null) {
@@ -312,8 +307,9 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                     ),
                     sliver: SliverToBoxAdapter(
                       child: const AppHeader(
-                        title: 'How do you like to train?',
-                        description: 'Choose your usual activities. You can select more than one.',
+                        title: "What's in your rotation?",
+                        description:
+                            'Pick the activities you do or want to discover.',
                       ),
                     ),
                   ),

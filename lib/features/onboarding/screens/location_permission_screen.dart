@@ -42,11 +42,8 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
         locationPermissionGranted: granted,
       );
       if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const ActivitiesScreen(),
-        ),
-      );
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const ActivitiesScreen()));
     } on CredsApiException catch (e) {
       if (!mounted) return;
       if (e.isNetworkOrOfflineError &&
@@ -54,11 +51,8 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
         debugPrint(
           '⚠️ Backend offline en LocationPermissionScreen: ${e.message}',
         );
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const ActivitiesScreen(),
-          ),
-        );
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const ActivitiesScreen()));
         return;
       }
       AppFeedback.showError(context, e.message);
@@ -100,9 +94,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
             return SingleChildScrollView(
               padding: EdgeInsets.symmetric(horizontal: 1.5.rem), // 24 px
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -114,12 +106,10 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                       _buildLocationBadge(),
 
                       SizedBox(height: 2.0.rem), // 32 px
-
                       // 2. Encabezado centrado reutilizando AppHeader
                       const AppHeader.centered(
-                        title: 'Location permission',
-                        description:
-                            'Enable location access for a more detailed map with\nthe best recommendations.',
+                        title: 'Find your next spot',
+                        description: 'Use your location to find nearby spots, see where your people go, and get better recommendations wherever you are.',
                         spacing: 12.0,
                       ),
 
@@ -193,7 +183,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
       children: [
         // Botón principal
         AppButton(
-          text: 'Enable permissions',
+          text: 'Use my location',
           variant: AppButtonVariant.primary,
           onPressed: _handleEnablePermissions,
         ),
@@ -201,12 +191,8 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
         SizedBox(height: 0.5.rem),
 
         // Enlace secundario "Do this later" estandarizado
-        AppLinkButton(
-          text: 'Do this later',
-          onPressed: _handleDoThisLater,
-        ),
+        AppLinkButton(text: 'Do this later', onPressed: _handleDoThisLater),
       ],
     );
   }
 }
-

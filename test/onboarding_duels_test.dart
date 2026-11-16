@@ -97,6 +97,22 @@ void main() {
       expect(find.text('1 of 2 comparisons won'), findsOneWidget);
       expect(find.text('0 of 2 comparisons won'), findsOneWidget);
       expect(find.text('Save and continue'), findsOneWidget);
+
+      // Paso 09: UsefulPermissionsScreen
+      await tester.tap(find.text('Save and continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('Make Creds more useful'), findsOneWidget);
+      expect(find.text('Find friends who already use Creds.'), findsOneWidget);
+
+      // Paso 10: FollowSuggestionsScreen -> HomeScreen
+      await tester.tap(find.text('Continue with my selection'));
+      await tester.pumpAndSettle();
+      expect(find.text('Training is better together'), findsOneWidget);
+      expect(find.text('Follow 2 and go to Home'), findsOneWidget);
+
+      await tester.tap(find.text('Follow 2 and go to Home'));
+      await tester.pumpAndSettle();
+      expect(find.text('CREDS'), findsOneWidget);
     });
 
     testWidgets('ActivitiesScreen navigates to YourPlacesScreen on Continue',
@@ -110,7 +126,7 @@ void main() {
       await tester.tap(find.text('Strength training'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Continue with 1 activity'));
+      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
 
       expect(find.text('YOUR PLACES'), findsOneWidget);

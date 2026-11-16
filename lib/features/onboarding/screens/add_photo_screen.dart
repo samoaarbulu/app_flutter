@@ -324,7 +324,8 @@ class _AddPhotoScreenState extends State<AddPhotoScreen> {
                       // 1. Encabezado principal (reutilizando AppHeader)
                       const AppHeader(
                         title: 'Add your photo',
-                        description: 'Lorem ipsum dolor',
+                        description:
+                            'Add a photo so your community can recognize you.',
                       ),
 
                       // Espacio flexible superior hacia el selector central

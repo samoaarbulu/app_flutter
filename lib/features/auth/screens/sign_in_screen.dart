@@ -197,8 +197,9 @@ class _SignInScreenState extends State<SignInScreen> {
                       SizedBox(height: 1.5.rem),
 
                       const AppHeader(
-                        title: 'Welcome back',
-                        description: 'Sign in to your account to continue.',
+                        title: 'Sign in',
+                        description:
+                            'Sign in to revisit your places, comparisons and favorites.',
                       ),
 
                       SizedBox(height: 1.75.rem),
@@ -226,14 +227,21 @@ class _SignInScreenState extends State<SignInScreen> {
                         },
                       ),
 
-                      SizedBox(height: 1.5.rem),
+                      SizedBox(height: 0.75.rem),
 
-                      AppButton(
-                        text: 'Sign in',
-                        variant: AppButtonVariant.primary,
-                        isLoading: _isLoading,
-                        onPressed:
-                            (_isButtonEnabled && !_isLoading) ? _handleSignIn : null,
+                      GestureDetector(
+                        onTap: () => AppFeedback.show(
+                          context,
+                          'Password recovery coming soon',
+                        ),
+                        child: Text(
+                          'Forgot your password?',
+                          style: GoogleFonts.poppins(
+                            fontSize: 0.8125.rem,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                       ),
 
                       SizedBox(height: 1.5.rem),
@@ -244,7 +252,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           Padding(
                             padding: EdgeInsets.symmetric(horizontal: 0.75.rem),
                             child: Text(
-                              'or',
+                              'or continue with',
                               style: GoogleFonts.poppins(
                                 fontSize: 0.8125.rem,
                                 color: AppColors.textMuted,
@@ -281,9 +289,29 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
 
+                      SizedBox(height: 1.25.rem),
+
+                      Text(
+                        'Signing in will take you straight to Home.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 0.8125.rem,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+
                       const Spacer(),
 
                       SizedBox(height: 1.5.rem),
+
+                      AppButton(
+                        text: 'Sign in',
+                        variant: AppButtonVariant.primary,
+                        isLoading: _isLoading,
+                        onPressed:
+                            (_isButtonEnabled && !_isLoading) ? _handleSignIn : null,
+                      ),
+
+                      SizedBox(height: 1.0.rem),
 
                       Center(
                         child: AppLinkText(
