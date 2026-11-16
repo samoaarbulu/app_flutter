@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widget_previews.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -383,4 +384,15 @@ class _SelectedPlaceTile extends StatelessWidget {
       ),
     );
   }
+}
+
+@Preview(
+  name: 'Your Places Screen',
+  size: Size(390, 844),
+)
+Widget previewYourPlacesScreen() {
+  return const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: YourPlacesScreen(),
+  );
 }
