@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/services/creds_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
 import '../../../core/utils/app_rem.dart';
 import '../../../shared/widgets/app_header.dart';
 import '../../../shared/widgets/app_link_button.dart';
@@ -84,7 +86,7 @@ class _ComparePlacesScreenState extends State<ComparePlacesScreen> {
     });
   }
 
-  void _advanceOrFinish() {
+  Future<void> _advanceOrFinish() async {
     if (_currentIndex < _pairs.length - 1) {
       setState(() {
         _currentIndex++;
@@ -94,13 +96,54 @@ class _ComparePlacesScreenState extends State<ComparePlacesScreen> {
       return;
     }
 
-    final ranked = _computeRanking();
-    setState(() => _isTransitioning = false);
+    var ranked = _computeRanking();
 
     if (widget.onCompleted != null) {
+      setState(() => _isTransitioning = false);
       widget.onCompleted!(ranked);
       return;
     }
+
+    if (CredsApiService.instance.hasSession) {
+      try {
+        final comparisons = <CredsDuelComparisonInput>[];
+        for (var i = 0; i < _pairs.length; i++) {
+          final (placeA, placeB) = _pairs[i];
+          final winnerId = _roundWinners[i];
+          final outcome = winnerId == placeA.id
+              ? 'place_a'
+              : winnerId == placeB.id
+                  ? 'place_b'
+                  : 'tie';
+          comparisons.add(
+            CredsDuelComparisonInput(
+              placeAId: placeA.id,
+              placeBId: placeB.id,
+              outcome: outcome,
+            ),
+          );
+        }
+
+        final response =
+            await CredsApiService.instance.submitOnboardingRanking(
+          placeIds: widget.places.map((p) => p.id).toList(),
+          comparisons: comparisons,
+        );
+        if (response.items.isNotEmpty) {
+          ranked = response.items;
+        }
+      } on CredsApiException catch (e) {
+        if (!mounted) return;
+        if (!e.isNetworkOrOfflineError) {
+          setState(() => _isTransitioning = false);
+          AppFeedback.showError(context, e.message);
+          return;
+        }
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _isTransitioning = false);
 
     Navigator.of(context).push(
       MaterialPageRoute(

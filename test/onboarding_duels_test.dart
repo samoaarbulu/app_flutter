@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:app_flutter/features/onboarding/models/onboarding_place.dart';
 import 'package:app_flutter/features/onboarding/screens/activities_screen.dart';
 import 'package:app_flutter/features/onboarding/screens/your_places_screen.dart';
 import 'package:app_flutter/shared/widgets/app_button.dart';
@@ -7,11 +8,43 @@ import 'package:app_flutter/shared/widgets/app_button.dart';
 void main() {
   group('Onboarding Step 08 - First Ranking Duels Flow', () {
     testWidgets(
-        'YourPlacesScreen manages minimum 3 places, search, delete, and navigates to ComparePlacesScreen',
+        'YourPlacesScreen starts empty and requires 3 selected places to enable Start ranking',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: YourPlacesScreen(),
+        ),
+      );
+
+      expect(find.text('0 added'), findsOneWidget);
+      var startButton =
+          tester.widget<AppButton>(find.widgetWithText(AppButton, 'Start ranking'));
+      expect(startButton.onPressed, isNull);
+
+      for (final query in ['Atlas', 'Distrito', 'Norte']) {
+        await tester.enterText(
+          find.widgetWithText(TextFormField, "Search places you've been"),
+          query,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.add_circle_outline_rounded).first);
+        await tester.pumpAndSettle();
+      }
+
+      expect(find.text('3 added'), findsOneWidget);
+      startButton =
+          tester.widget<AppButton>(find.widgetWithText(AppButton, 'Start ranking'));
+      expect(startButton.onPressed, isNotNull);
+    });
+
+    testWidgets(
+        'YourPlacesScreen manages minimum 3 places, search, delete, and navigates to ComparePlacesScreen',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: YourPlacesScreen(
+            initialPlaces: OnboardingPlace.defaultSelected,
+          ),
         ),
       );
 
@@ -67,7 +100,9 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: YourPlacesScreen(),
+          home: YourPlacesScreen(
+            initialPlaces: OnboardingPlace.defaultSelected,
+          ),
         ),
       );
 

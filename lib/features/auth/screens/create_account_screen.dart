@@ -55,7 +55,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   void initState() {
     super.initState();
     _emailController = TextEditingController(
-      text: widget.initialEmail ?? 'ana.torres@correo.com',
+      text: widget.initialEmail ?? '',
     );
     _passwordController = TextEditingController(
       text: widget.initialPassword ?? '',

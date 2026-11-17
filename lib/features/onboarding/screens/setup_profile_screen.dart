@@ -108,11 +108,11 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
     final user = AuthService.instance.currentUser;
     final apiUser = CredsApiService.instance.currentUser;
 
-    // 1. Obtener First name y Last name desde backend, Google o Figma por defecto
+    // 1. Obtener First name y Last name desde backend o Google (vacíos si no existen)
     String defaultFirstName =
-        widget.initialFirstName ?? apiUser?.firstName ?? 'Ana';
+        widget.initialFirstName ?? apiUser?.firstName ?? '';
     String defaultLastName =
-        widget.initialLastName ?? apiUser?.lastName ?? 'Torres';
+        widget.initialLastName ?? apiUser?.lastName ?? '';
     if (widget.initialFirstName == null &&
         apiUser?.firstName == null &&
         user?.displayName != null &&
@@ -122,16 +122,16 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
       defaultLastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     }
 
-    // 2. Obtener Username sugerido asegurando el prefijo '@'
+    // 2. Obtener Username sugerido asegurando el prefijo '@' si existe
     String defaultUsername =
-        widget.initialUsername ?? apiUser?.username ?? 'ana.entrena';
+        widget.initialUsername ?? apiUser?.username ?? '';
     if (widget.initialUsername == null && apiUser?.username == null) {
       final emailSource = apiUser?.email ?? user?.email;
       if (emailSource != null && emailSource.contains('@')) {
         defaultUsername = emailSource.split('@').first;
       }
     }
-    if (!defaultUsername.startsWith('@')) {
+    if (defaultUsername.isNotEmpty && !defaultUsername.startsWith('@')) {
       defaultUsername = '@$defaultUsername';
     }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/services/creds_api_service.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_feedback.dart';
@@ -56,8 +57,9 @@ class _AddPhotoScreenState extends State<AddPhotoScreen> {
     super.initState();
     _mediaService = widget.mediaService ?? MediaService.instance;
     _customImage = AuthService.instance.customPhoto;
-    _photoUrl =
-        widget.initialPhotoUrl ?? AuthService.instance.currentUser?.photoURL;
+    _photoUrl = widget.initialPhotoUrl ??
+        CredsApiService.instance.currentUser?.avatarUrl ??
+        AuthService.instance.currentUser?.photoURL;
   }
 
   /// Indica si hay una imagen activa (personalizada o remota no eliminada)
@@ -65,7 +67,8 @@ class _AddPhotoScreenState extends State<AddPhotoScreen> {
       _customImage != null ||
       (!_isRemoved && _photoUrl != null && _photoUrl!.isNotEmpty);
 
-  void _handleSaveAndContinue() {
+  Future<void> _handleSaveAndContinue() async {
+    if (_isLoading) return;
     setState(() => _isLoading = true);
 
     // Persistir la foto en el servicio de autenticación en memoria
@@ -75,32 +78,86 @@ class _AddPhotoScreenState extends State<AddPhotoScreen> {
       AuthService.instance.setCustomPhoto(_customImage);
     }
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        if (widget.onSaveAndContinue != null) {
-          widget.onSaveAndContinue!();
+    if (widget.onSaveAndContinue != null) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      widget.onSaveAndContinue!();
+      return;
+    }
+
+    if (CredsApiService.instance.hasSession) {
+      try {
+        if (_isRemoved) {
+          await CredsApiService.instance.setupProfile(clearAvatar: true);
+        } else if (_customImage != null) {
+          final publicUrl =
+              await CredsApiService.instance.uploadAvatarImage(_customImage!);
+          await CredsApiService.instance.setupProfile(avatarUrl: publicUrl);
+        } else if (_photoUrl != null && _photoUrl!.isNotEmpty) {
+          await CredsApiService.instance.setupProfile(avatarUrl: _photoUrl);
         } else {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const SetupProfileScreen(),
-            ),
-          );
+          await CredsApiService.instance.setupProfile(clearAvatar: true);
         }
+      } on CredsApiException catch (e) {
+        if (!mounted) return;
+        if (!(e.isNetworkOrOfflineError &&
+            CredsApiService.instance.offlineFallbackEnabled)) {
+          setState(() => _isLoading = false);
+          AppFeedback.showError(context, e.message);
+          return;
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        AppFeedback.showError(context, 'No se pudo guardar tu foto: $e');
+        return;
       }
-    });
+    } else {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SetupProfileScreen(),
+      ),
+    );
   }
 
-  void _handleSkip() {
+  Future<void> _handleSkip() async {
+    if (_isLoading) return;
     if (widget.onSkip != null) {
       widget.onSkip!();
-    } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const SetupProfileScreen(),
-        ),
-      );
+      return;
     }
+
+    if (CredsApiService.instance.hasSession) {
+      setState(() => _isLoading = true);
+      try {
+        await CredsApiService.instance.setupProfile(clearAvatar: true);
+      } on CredsApiException catch (e) {
+        if (!mounted) return;
+        if (!(e.isNetworkOrOfflineError &&
+            CredsApiService.instance.offlineFallbackEnabled)) {
+          setState(() => _isLoading = false);
+          AppFeedback.showError(context, e.message);
+          return;
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SetupProfileScreen(),
+      ),
+    );
   }
 
   /// Abre el modal de selección de origen (Cámara / Galería / Eliminar)
@@ -593,7 +650,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen> {
                         SizedBox(height: 0.625.rem), // 10 px
                         AppLinkButton(
                           text: 'Not now',
-                          onPressed: _handleSkip,
+                          onPressed: _isLoading ? null : _handleSkip,
                           textStyle: GoogleFonts.poppins(
                             fontSize: 1.0.rem, // 16 px (mismo tamaño y peso del diseño)
                             fontWeight: FontWeight.w700,

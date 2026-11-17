@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../features/onboarding/models/onboarding_place.dart';
 import '../config/app_config.dart';
+import 'media_service.dart';
 
 /// Excepción tipada para errores al comunicarse con CREDS Core API (`/v1`).
 class CredsApiException implements Exception {
@@ -494,6 +496,7 @@ class CredsApiService {
     String? firstName,
     String? lastName,
     String? avatarUrl,
+    bool clearAvatar = false,
     String? bio,
   }) async {
     if (!hasSession) {
@@ -517,7 +520,9 @@ class CredsApiService {
     if (lastName != null) {
       body['lastName'] = lastName.trim();
     }
-    if (avatarUrl != null) {
+    if (clearAvatar) {
+      body['avatarUrl'] = null;
+    } else if (avatarUrl != null && avatarUrl.trim().isNotEmpty) {
       body['avatarUrl'] = avatarUrl.trim();
     }
     if (bio != null) {
@@ -538,6 +543,8 @@ class CredsApiService {
   /// `PATCH /v1/users/preferences`
   Future<CredsUserProfile> updatePreferences({
     bool? locationPermissionGranted,
+    bool? contactsPermissionGranted,
+    bool? notificationsPermissionGranted,
     String? primaryCity,
     List<String>? activityCodes,
   }) async {
@@ -552,6 +559,12 @@ class CredsApiService {
     final body = <String, dynamic>{};
     if (locationPermissionGranted != null) {
       body['locationPermissionGranted'] = locationPermissionGranted;
+    }
+    if (contactsPermissionGranted != null) {
+      body['contactsPermissionGranted'] = contactsPermissionGranted;
+    }
+    if (notificationsPermissionGranted != null) {
+      body['notificationsPermissionGranted'] = notificationsPermissionGranted;
     }
     if (primaryCity != null && primaryCity.trim().isNotEmpty) {
       body['primaryCity'] = primaryCity.trim();
@@ -569,6 +582,435 @@ class CredsApiService {
     final profile = CredsUserProfile.fromJson(json);
     _currentUser = profile;
     return profile;
+  }
+
+  // ---------------------------------------------------------------------------
+  // ENDPOINTS DE PLACES Y ONBOARDING DUELS (`/v1/places/*`, `/v1/users/onboarding/*`)
+  // ---------------------------------------------------------------------------
+
+  /// `GET /v1/places/search` buscando por nombre/marca (`q`), localidad (`locality`)
+  /// y categoría (`category`) en paralelo para unificar resultados en un solo buscador.
+  Future<List<OnboardingPlace>> searchPlaces({
+    required String query,
+    int limit = 20,
+  }) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para buscar lugares en backend.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      final json = await _sendJson(
+        method: 'GET',
+        path: '/places/search',
+        queryParameters: {'limit': limit.toString()},
+        requiresAuth: true,
+      );
+      return _parsePlacesItems(json);
+    }
+
+    final requests = <Future<Map<String, dynamic>>>[
+      _sendJson(
+        method: 'GET',
+        path: '/places/search',
+        queryParameters: {
+          'q': trimmed.length > 100 ? trimmed.substring(0, 100) : trimmed,
+          'limit': limit.toString(),
+        },
+        requiresAuth: true,
+      ),
+      if (trimmed.length <= 80)
+        _sendJson(
+          method: 'GET',
+          path: '/places/search',
+          queryParameters: {
+            'locality': trimmed,
+            'limit': limit.toString(),
+          },
+          requiresAuth: true,
+        ),
+      if (trimmed.length <= 80)
+        _sendJson(
+          method: 'GET',
+          path: '/places/search',
+          queryParameters: {
+            'category': trimmed.toLowerCase(),
+            'limit': limit.toString(),
+          },
+          requiresAuth: true,
+        ),
+    ];
+
+    final responses = await Future.wait(requests);
+    final seenIds = <String>{};
+    final merged = <OnboardingPlace>[];
+
+    for (final json in responses) {
+      for (final place in _parsePlacesItems(json)) {
+        if (seenIds.add(place.id)) {
+          merged.add(place);
+        }
+      }
+    }
+
+    return merged.take(limit).toList();
+  }
+
+  List<OnboardingPlace> _parsePlacesItems(Map<String, dynamic> json) {
+    final items = json['items'];
+    if (items is! List) {
+      return const [];
+    }
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(OnboardingPlace.fromApiJson)
+        .toList();
+  }
+
+  /// `POST /v1/users/onboarding/duels/prepare`
+  Future<void> prepareOnboardingDuels(List<String> placeIds) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para preparar duelos en backend.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    await _sendJson(
+      method: 'POST',
+      path: '/users/onboarding/duels/prepare',
+      requiresAuth: true,
+      body: {'placeIds': placeIds},
+    );
+  }
+
+  /// `POST /v1/users/onboarding/ranking` con duelos A/B completados.
+  Future<CredsUserRankingResponse> submitOnboardingRanking({
+    required List<String> placeIds,
+    required List<CredsDuelComparisonInput> comparisons,
+  }) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para guardar el ranking en backend.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final json = await _sendJson(
+      method: 'POST',
+      path: '/users/onboarding/ranking',
+      requiresAuth: true,
+      body: {
+        'placeIds': placeIds,
+        'comparisons': comparisons.map((c) => c.toJson()).toList(),
+        'skipped': false,
+      },
+    );
+    return CredsUserRankingResponse.fromJson(json);
+  }
+
+  /// `GET /v1/users/me/ranking` — consulta el ranking guardado del usuario autenticado.
+  Future<CredsUserRankingResponse> getUserRanking() async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para consultar el ranking en backend.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final json = await _sendJson(
+      method: 'GET',
+      path: '/users/me/ranking',
+      requiresAuth: true,
+    );
+    return CredsUserRankingResponse.fromJson(json);
+  }
+
+  /// `POST /v1/users/onboarding/ranking` con `skipped: true`
+  Future<void> skipOnboardingRanking() async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para omitir el ranking en backend.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    await _sendJson(
+      method: 'POST',
+      path: '/users/onboarding/ranking',
+      requiresAuth: true,
+      body: {'skipped': true},
+    );
+  }
+
+  /// `GET /v1/users/suggestions`
+  Future<List<CredsSuggestedUser>> getSuggestions() async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para cargar sugerencias en backend.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final json = await _sendJson(
+      method: 'GET',
+      path: '/users/suggestions',
+      requiresAuth: true,
+    );
+
+    final rawItems = json['items'];
+    if (rawItems is! List) {
+      return const [];
+    }
+    return rawItems
+        .whereType<Map<String, dynamic>>()
+        .map(CredsSuggestedUser.fromJson)
+        .toList();
+  }
+
+  /// `POST /v1/users/onboarding/follows` — finaliza onboarding (`profileCompleted = true`).
+  Future<CredsUserProfile> completeOnboardingFollows(
+    List<String> targetUserIds,
+  ) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para finalizar onboarding en backend.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final json = await _sendJson(
+      method: 'POST',
+      path: '/users/onboarding/follows',
+      requiresAuth: true,
+      body: {'targetUserIds': targetUserIds},
+    );
+    final profile = CredsUserProfile.fromJson(json);
+    _currentUser = profile;
+    return profile;
+  }
+
+  /// `GET /v1/users/invite-link`
+  Future<CredsInviteLinkResponse> getInviteLink() async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para obtener enlace de invitación.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final json = await _sendJson(
+      method: 'GET',
+      path: '/users/invite-link',
+      requiresAuth: true,
+    );
+    return CredsInviteLinkResponse.fromJson(json);
+  }
+
+  /// `POST /v1/users/contacts/match` (envía en lotes de máximo 200 contactos).
+  Future<CredsMatchContactsResponse> matchContacts(
+    List<CredsContactMatchInput> contacts,
+  ) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para cruzar contactos en backend.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    if (contacts.isEmpty) {
+      final link = await getInviteLink();
+      return CredsMatchContactsResponse(
+        onCreds: const [],
+        toInvite: const [],
+        inviteUrl: link.inviteUrl,
+        shareMessage: link.shareMessage,
+      );
+    }
+
+    final onCredsById = <String, CredsSuggestedUser>{};
+    final toInvite = <CredsInvitableContact>[];
+    var inviteUrl = '';
+    var shareMessage = '';
+
+    const batchSize = 200;
+    for (var i = 0; i < contacts.length; i += batchSize) {
+      final end = (i + batchSize < contacts.length)
+          ? i + batchSize
+          : contacts.length;
+      final batch = contacts.sublist(i, end);
+
+      final json = await _sendJson(
+        method: 'POST',
+        path: '/users/contacts/match',
+        requiresAuth: true,
+        body: {
+          'contacts': batch.map((c) => c.toJson()).toList(),
+        },
+      );
+
+      final parsed = CredsMatchContactsResponse.fromJson(json);
+      for (final user in parsed.onCreds) {
+        onCredsById[user.id] = user;
+      }
+      toInvite.addAll(parsed.toInvite);
+      if (parsed.inviteUrl.isNotEmpty) inviteUrl = parsed.inviteUrl;
+      if (parsed.shareMessage.isNotEmpty) shareMessage = parsed.shareMessage;
+    }
+
+    return CredsMatchContactsResponse(
+      onCreds: onCredsById.values.toList(),
+      toInvite: toInvite,
+      inviteUrl: inviteUrl,
+      shareMessage: shareMessage,
+    );
+  }
+
+  /// `POST /v1/users/invites`
+  Future<void> createUserInvite({
+    String? contactName,
+    String? contactPhone,
+    String? contactEmail,
+  }) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para registrar invitación.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final body = <String, dynamic>{};
+    if (contactName != null && contactName.trim().isNotEmpty) {
+      body['contactName'] = contactName.trim();
+    }
+    if (contactPhone != null && contactPhone.trim().isNotEmpty) {
+      body['contactPhone'] = contactPhone.trim();
+    }
+    if (contactEmail != null && contactEmail.trim().isNotEmpty) {
+      body['contactEmail'] = contactEmail.trim();
+    }
+
+    await _sendJson(
+      method: 'POST',
+      path: '/users/invites',
+      requiresAuth: true,
+      body: body,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ENDPOINTS DE MEDIA (`/v1/media/*`)
+  // ---------------------------------------------------------------------------
+
+  /// `POST /v1/media/presign`
+  Future<CredsPresignMediaResponse> presignMediaUpload({
+    required String purpose,
+    required String contentType,
+    int? fileSizeBytes,
+  }) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para subir archivos.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final body = <String, dynamic>{
+      'purpose': purpose,
+      'contentType': contentType,
+    };
+    if (fileSizeBytes != null && fileSizeBytes > 0) {
+      body['fileSizeBytes'] = fileSizeBytes;
+    }
+
+    final json = await _sendJson(
+      method: 'POST',
+      path: '/media/presign',
+      requiresAuth: true,
+      body: body,
+    );
+    return CredsPresignMediaResponse.fromJson(json);
+  }
+
+  /// Sube un avatar a Cloudflare R2 vía URL prefirmada y devuelve `publicUrl`.
+  Future<String> uploadAvatarImage(PickedImage image) async {
+    final contentType = _resolveImageContentType(image);
+    final presign = await presignMediaUpload(
+      purpose: 'avatar',
+      contentType: contentType,
+      fileSizeBytes: image.sizeInBytes,
+    );
+
+    try {
+      final putResponse = await _client
+          .put(
+            Uri.parse(presign.uploadUrl),
+            headers: presign.requiredHeaders,
+            body: image.bytes,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (putResponse.statusCode < 200 || putResponse.statusCode >= 300) {
+        throw CredsApiException(
+          statusCode: putResponse.statusCode,
+          message:
+              'No se pudo subir la foto de perfil (${putResponse.statusCode}).',
+        );
+      }
+      return presign.publicUrl;
+    } on CredsApiException {
+      rethrow;
+    } catch (e) {
+      throw CredsApiException(
+        message: 'Error de red al subir la foto: $e',
+        isNetworkOrOfflineError: true,
+      );
+    }
+  }
+
+  /// `DELETE /v1/media`
+  Future<void> deleteMedia(String key) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para eliminar archivos.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    await _sendJson(
+      method: 'DELETE',
+      path: '/media',
+      requiresAuth: true,
+      body: {'key': key},
+    );
+  }
+
+  String _resolveImageContentType(PickedImage image) {
+    final mime = image.mimeType?.toLowerCase().trim();
+    if (mime == 'image/png' || mime == 'image/webp' || mime == 'image/jpeg') {
+      return mime!;
+    }
+    if (mime == 'image/jpg') return 'image/jpeg';
+
+    final lowerName = image.name.toLowerCase();
+    if (lowerName.endsWith('.png')) return 'image/png';
+    if (lowerName.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
   }
 
   // ---------------------------------------------------------------------------
@@ -635,6 +1077,14 @@ class CredsApiService {
         case 'PATCH':
           response = await _client
               .patch(
+                uri,
+                headers: headers,
+                body: body != null ? jsonEncode(body) : null,
+              )
+              .timeout(_requestTimeout);
+        case 'DELETE':
+          response = await _client
+              .delete(
                 uri,
                 headers: headers,
                 body: body != null ? jsonEncode(body) : null,
@@ -710,5 +1160,226 @@ class CredsApiService {
       return error.trim();
     }
     return 'Error HTTP $statusCode en el servidor.';
+  }
+}
+
+/// Resultado individual de un duelo A/B para enviar a `POST /v1/users/onboarding/ranking`.
+class CredsDuelComparisonInput {
+  final String placeAId;
+  final String placeBId;
+
+  /// `'place_a'`, `'place_b'` o `'tie'`.
+  final String outcome;
+
+  const CredsDuelComparisonInput({
+    required this.placeAId,
+    required this.placeBId,
+    required this.outcome,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'placeAId': placeAId,
+        'placeBId': placeBId,
+        'outcome': outcome,
+      };
+}
+
+/// Respuesta de `POST /v1/users/onboarding/ranking` y `GET /v1/users/me/ranking`.
+class CredsUserRankingResponse {
+  final bool skipped;
+  final String onboardingStep;
+  final List<RankedPlace> items;
+
+  const CredsUserRankingResponse({
+    required this.skipped,
+    required this.onboardingStep,
+    required this.items,
+  });
+
+  factory CredsUserRankingResponse.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'];
+    final items = rawItems is List
+        ? rawItems
+            .whereType<Map<String, dynamic>>()
+            .map(RankedPlace.fromApiJson)
+            .toList()
+        : const <RankedPlace>[];
+
+    return CredsUserRankingResponse(
+      skipped: json['skipped'] as bool? ?? false,
+      onboardingStep: (json['onboardingStep'] ?? '').toString(),
+      items: items,
+    );
+  }
+}
+
+/// Elemento de sugerencia de usuario devuelto por `GET /v1/users/suggestions`.
+class CredsSuggestedUser {
+  final String id;
+  final String displayName;
+  final String initials;
+  final String? avatarUrl;
+  final String placesLabel;
+  final bool isFollowing;
+
+  const CredsSuggestedUser({
+    required this.id,
+    required this.displayName,
+    required this.initials,
+    this.avatarUrl,
+    required this.placesLabel,
+    required this.isFollowing,
+  });
+
+  factory CredsSuggestedUser.fromJson(Map<String, dynamic> json) {
+    return CredsSuggestedUser(
+      id: (json['id'] ?? '').toString(),
+      displayName: (json['displayName'] ?? '').toString(),
+      initials: (json['initials'] ?? 'CR').toString(),
+      avatarUrl: json['avatarUrl'] as String?,
+      placesLabel: (json['placesLabel'] ?? '').toString(),
+      isFollowing: json['isFollowing'] as bool? ?? false,
+    );
+  }
+}
+
+/// Respuesta de `POST /v1/media/presign`.
+class CredsPresignMediaResponse {
+  final String key;
+  final String uploadUrl;
+  final String publicUrl;
+  final int expiresInSeconds;
+  final Map<String, String> requiredHeaders;
+
+  const CredsPresignMediaResponse({
+    required this.key,
+    required this.uploadUrl,
+    required this.publicUrl,
+    required this.expiresInSeconds,
+    required this.requiredHeaders,
+  });
+
+  factory CredsPresignMediaResponse.fromJson(Map<String, dynamic> json) {
+    final rawHeaders = json['requiredHeaders'];
+    final headers = <String, String>{};
+    if (rawHeaders is Map) {
+      rawHeaders.forEach((k, v) {
+        headers[k.toString()] = v.toString();
+      });
+    }
+
+    return CredsPresignMediaResponse(
+      key: (json['key'] ?? '').toString(),
+      uploadUrl: (json['uploadUrl'] ?? '').toString(),
+      publicUrl: (json['publicUrl'] ?? '').toString(),
+      expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt() ?? 300,
+      requiredHeaders: headers,
+    );
+  }
+}
+
+/// Contacto enviado a `POST /v1/users/contacts/match`.
+class CredsContactMatchInput {
+  final String name;
+  final String? phoneNumber;
+  final String? email;
+
+  const CredsContactMatchInput({
+    required this.name,
+    this.phoneNumber,
+    this.email,
+  });
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{'name': name};
+    if (phoneNumber != null && phoneNumber!.trim().isNotEmpty) {
+      map['phoneNumber'] = phoneNumber!.trim();
+    }
+    if (email != null && email!.trim().isNotEmpty) {
+      map['email'] = email!.trim();
+    }
+    return map;
+  }
+}
+
+/// Contacto invitable devuelto por `POST /v1/users/contacts/match`.
+class CredsInvitableContact {
+  final String name;
+  final String? phoneNumber;
+  final String? email;
+  final bool alreadyInvited;
+
+  const CredsInvitableContact({
+    required this.name,
+    this.phoneNumber,
+    this.email,
+    required this.alreadyInvited,
+  });
+
+  factory CredsInvitableContact.fromJson(Map<String, dynamic> json) {
+    return CredsInvitableContact(
+      name: (json['name'] ?? '').toString(),
+      phoneNumber: json['phoneNumber'] as String?,
+      email: json['email'] as String?,
+      alreadyInvited: json['alreadyInvited'] as bool? ?? false,
+    );
+  }
+}
+
+/// Respuesta de `GET /v1/users/invite-link`.
+class CredsInviteLinkResponse {
+  final String inviteCode;
+  final String inviteUrl;
+  final String shareMessage;
+
+  const CredsInviteLinkResponse({
+    required this.inviteCode,
+    required this.inviteUrl,
+    required this.shareMessage,
+  });
+
+  factory CredsInviteLinkResponse.fromJson(Map<String, dynamic> json) {
+    return CredsInviteLinkResponse(
+      inviteCode: (json['inviteCode'] ?? '').toString(),
+      inviteUrl: (json['inviteUrl'] ?? '').toString(),
+      shareMessage: (json['shareMessage'] ?? '').toString(),
+    );
+  }
+}
+
+/// Respuesta de `POST /v1/users/contacts/match`.
+class CredsMatchContactsResponse {
+  final List<CredsSuggestedUser> onCreds;
+  final List<CredsInvitableContact> toInvite;
+  final String inviteUrl;
+  final String shareMessage;
+
+  const CredsMatchContactsResponse({
+    required this.onCreds,
+    required this.toInvite,
+    required this.inviteUrl,
+    required this.shareMessage,
+  });
+
+  factory CredsMatchContactsResponse.fromJson(Map<String, dynamic> json) {
+    final rawOnCreds = json['onCreds'];
+    final rawToInvite = json['toInvite'];
+
+    return CredsMatchContactsResponse(
+      onCreds: rawOnCreds is List
+          ? rawOnCreds
+              .whereType<Map<String, dynamic>>()
+              .map(CredsSuggestedUser.fromJson)
+              .toList()
+          : const [],
+      toInvite: rawToInvite is List
+          ? rawToInvite
+              .whereType<Map<String, dynamic>>()
+              .map(CredsInvitableContact.fromJson)
+              .toList()
+          : const [],
+      inviteUrl: (json['inviteUrl'] ?? '').toString(),
+      shareMessage: (json['shareMessage'] ?? '').toString(),
+    );
   }
 }

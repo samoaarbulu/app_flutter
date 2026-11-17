@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/services/creds_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
 import '../../../core/utils/app_rem.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_header.dart';
@@ -25,13 +27,39 @@ class UsefulPermissionsScreen extends StatefulWidget {
 class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
   bool _contactsEnabled = false;
   bool _notificationsEnabled = true;
+  bool _isSubmitting = false;
 
-  void _navigateNext() {
+  Future<void> _saveAndContinue({required bool skipped}) async {
+    if (_isSubmitting) return;
+
     if (widget.onContinue != null) {
       widget.onContinue!();
       return;
     }
 
+    if (CredsApiService.instance.hasSession) {
+      setState(() => _isSubmitting = true);
+      try {
+        await CredsApiService.instance.updatePreferences(
+          contactsPermissionGranted: skipped ? false : _contactsEnabled,
+          notificationsPermissionGranted:
+              skipped ? false : _notificationsEnabled,
+        );
+      } on CredsApiException catch (e) {
+        if (!mounted) return;
+        if (!e.isNetworkOrOfflineError) {
+          setState(() => _isSubmitting = false);
+          AppFeedback.showError(context, e.message);
+          return;
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+        }
+      }
+    }
+
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const FollowSuggestionsScreen(),
@@ -141,14 +169,19 @@ class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
                       AppButton(
                         text: 'Continue with my selection',
                         variant: AppButtonVariant.primary,
-                        onPressed: _navigateNext,
+                        isLoading: _isSubmitting,
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => _saveAndContinue(skipped: false),
                       ),
 
                       SizedBox(height: 0.5.rem),
 
                       AppLinkButton(
                         text: 'Do this later',
-                        onPressed: _navigateNext,
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => _saveAndContinue(skipped: true),
                       ),
 
                       SizedBox(height: 1.0.rem),

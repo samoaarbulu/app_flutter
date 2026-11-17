@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_rem.dart';
 import 'app_otp_input.dart';
@@ -99,8 +101,7 @@ class _AppOtpSectionState extends State<AppOtpSection> {
 
   @override
   Widget build(BuildContext context) {
-    final timerString =
-        '00:${_secondsRemaining.toString().padLeft(2, '0')}';
+    final timerString = '00:${_secondsRemaining.toString().padLeft(2, '0')}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +118,6 @@ class _AppOtpSectionState extends State<AppOtpSection> {
         ),
 
         SizedBox(height: 0.875.rem), // 14 px
-
         // 2. Casillas numéricas OTP
         AppOtpInput(
           length: widget.length,
@@ -127,7 +127,6 @@ class _AppOtpSectionState extends State<AppOtpSection> {
         ),
 
         SizedBox(height: 0.875.rem), // 14 px
-
         // 3. Fila de reenvío con temporizador
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -196,4 +195,3 @@ class _AppOtpSectionState extends State<AppOtpSection> {
     );
   }
 }
-

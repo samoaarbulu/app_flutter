@@ -4,8 +4,11 @@ import '../../home/screens/home_screen.dart';
 import '../../../core/services/creds_api_service.dart';
 import '../screens/activities_screen.dart';
 import '../screens/add_photo_screen.dart';
+import '../screens/follow_suggestions_screen.dart';
 import '../screens/location_permission_screen.dart';
 import '../screens/setup_profile_screen.dart';
+import '../screens/useful_permissions_screen.dart';
+import '../screens/your_places_screen.dart';
 import '../../auth/screens/verify_email_screen.dart';
 
 /// Decide a qué pantalla debe ir el usuario según su avance en backend (`onboardingStep`).
@@ -24,6 +27,9 @@ abstract final class OnboardingNavigator {
       'setup_profile' => const SetupProfileScreen(),
       'location_permission' => const LocationPermissionScreen(),
       'activities' => const ActivitiesScreen(),
+      'first_ranking' => const YourPlacesScreen(),
+      'permissions' => const UsefulPermissionsScreen(),
+      'follow_suggestions' => const FollowSuggestionsScreen(),
       _ => const AddPhotoScreen(),
     };
   }

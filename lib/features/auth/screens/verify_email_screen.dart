@@ -169,10 +169,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       // 3. Sección OTP completa (Componente global AppOtpSection)
                       AppOtpSection(
                         onChanged: (val) => _enteredCode = val,
-                        onCompleted: (val) {
-                          _enteredCode = val;
-                          _handleVerify();
-                        },
+                        onCompleted: (val) => _enteredCode = val,
                         onResend: _handleResendCode,
                       ),
 

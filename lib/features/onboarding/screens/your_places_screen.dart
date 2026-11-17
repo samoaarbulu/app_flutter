@@ -1,17 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/services/creds_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_feedback.dart';
 import '../../../core/utils/app_rem.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_header.dart';
 import '../../../shared/widgets/app_link_button.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../home/screens/home_screen.dart';
 import '../models/onboarding_place.dart';
 import 'compare_places_screen.dart';
+import 'useful_permissions_screen.dart';
 
 /// Pantalla inicial del Paso 08 ("Start with places you've tried" — `08 duelos/01.png`).
 ///
@@ -36,44 +40,103 @@ class YourPlacesScreen extends StatefulWidget {
 class _YourPlacesScreenState extends State<YourPlacesScreen> {
   final TextEditingController _searchController = TextEditingController();
   late final List<OnboardingPlace> _selectedPlaces;
+  List<OnboardingPlace> _searchResults = const [];
+  Timer? _searchDebounce;
+  int _searchRequestId = 0;
+  bool _isSearching = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _selectedPlaces = List<OnboardingPlace>.from(
-      widget.initialPlaces ?? OnboardingPlace.defaultSelected,
+      widget.initialPlaces ?? const [],
     );
     _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    setState(() {});
+    _searchDebounce?.cancel();
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      _searchRequestId++;
+      setState(() {
+        _searchResults = const [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    if (!CredsApiService.instance.hasSession) {
+      setState(() {
+        _searchResults = _filterLocalCatalog(query);
+        _isSearching = false;
+      });
+      return;
+    }
+
+    final requestId = ++_searchRequestId;
+    setState(() => _isSearching = true);
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      _executeRemoteSearch(query, requestId);
+    });
   }
 
-  List<OnboardingPlace> get _searchResults {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return const [];
-
+  List<OnboardingPlace> _filterLocalCatalog(String query) {
+    final lower = query.toLowerCase();
     final selectedIds = _selectedPlaces.map((p) => p.id).toSet();
     return OnboardingPlace.sampleCatalog.where((place) {
       if (selectedIds.contains(place.id)) return false;
-      return place.name.toLowerCase().contains(query) ||
-          place.neighborhood.toLowerCase().contains(query) ||
-          place.shortCategory.toLowerCase().contains(query);
+      return place.name.toLowerCase().contains(lower) ||
+          place.neighborhood.toLowerCase().contains(lower) ||
+          place.shortCategory.toLowerCase().contains(lower);
     }).toList();
+  }
+
+  Future<void> _executeRemoteSearch(String query, int requestId) async {
+    try {
+      final results = await CredsApiService.instance.searchPlaces(query: query);
+      if (!mounted || requestId != _searchRequestId) return;
+
+      final selectedIds = _selectedPlaces.map((p) => p.id).toSet();
+      setState(() {
+        _searchResults =
+            results.where((p) => !selectedIds.contains(p.id)).toList();
+        _isSearching = false;
+      });
+    } on CredsApiException catch (e) {
+      if (!mounted || requestId != _searchRequestId) return;
+      if (e.isNetworkOrOfflineError) {
+        setState(() {
+          _searchResults = _filterLocalCatalog(query);
+          _isSearching = false;
+        });
+      } else {
+        setState(() {
+          _searchResults = const [];
+          _isSearching = false;
+        });
+        AppFeedback.showError(context, e.message);
+      }
+    }
   }
 
   void _addPlace(OnboardingPlace place) {
     HapticFeedback.selectionClick();
+    _searchDebounce?.cancel();
+    _searchRequestId++;
     setState(() {
       _selectedPlaces.add(place);
+      _searchResults = const [];
+      _isSearching = false;
       _searchController.clear();
     });
   }
@@ -85,14 +148,35 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
     });
   }
 
-  void _handleStartRanking() {
-    if (_selectedPlaces.length < 3) return;
+  Future<void> _handleStartRanking() async {
+    if (_selectedPlaces.length < 3 || _isSubmitting) return;
 
     if (widget.onStartRanking != null) {
       widget.onStartRanking!(List<OnboardingPlace>.from(_selectedPlaces));
       return;
     }
 
+    if (CredsApiService.instance.hasSession) {
+      setState(() => _isSubmitting = true);
+      try {
+        await CredsApiService.instance.prepareOnboardingDuels(
+          _selectedPlaces.map((p) => p.id).toList(),
+        );
+      } on CredsApiException catch (e) {
+        if (!mounted) return;
+        if (!e.isNetworkOrOfflineError) {
+          setState(() => _isSubmitting = false);
+          AppFeedback.showError(context, e.message);
+          return;
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+        }
+      }
+    }
+
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ComparePlacesScreen(
@@ -102,16 +186,35 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
     );
   }
 
-  void _handleDoThisLater() {
+  Future<void> _handleDoThisLater() async {
+    if (_isSubmitting) return;
+
     if (widget.onDoThisLater != null) {
       widget.onDoThisLater!();
       return;
     }
 
-    // TODO(onboarding-step-09): Navegar a UsefulPermissionsScreen (Paso 09) y luego FollowSuggestionsScreen (Paso 10).
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
+    if (CredsApiService.instance.hasSession) {
+      setState(() => _isSubmitting = true);
+      try {
+        await CredsApiService.instance.skipOnboardingRanking();
+      } on CredsApiException catch (e) {
+        if (!mounted) return;
+        if (!e.isNetworkOrOfflineError) {
+          setState(() => _isSubmitting = false);
+          AppFeedback.showError(context, e.message);
+          return;
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+        }
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const UsefulPermissionsScreen()),
     );
   }
 
@@ -151,7 +254,14 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
                       prefixIcon: const Icon(Icons.search_rounded, size: 22),
                     ),
 
-                    if (searchMatches.isNotEmpty) ...[
+                    if (_isSearching) ...[
+                      SizedBox(height: 0.5.rem),
+                      const LinearProgressIndicator(
+                        minHeight: 2,
+                        color: AppColors.primaryAction,
+                        backgroundColor: AppColors.inputSurface,
+                      ),
+                    ] else if (searchMatches.isNotEmpty) ...[
                       SizedBox(height: 0.5.rem),
                       _buildSearchSuggestions(searchMatches),
                     ],
@@ -228,12 +338,14 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
                   AppButton(
                     text: 'Start ranking',
                     variant: AppButtonVariant.primary,
-                    onPressed: canStartRanking ? _handleStartRanking : null,
+                    isLoading: _isSubmitting,
+                    onPressed:
+                        (canStartRanking && !_isSubmitting) ? _handleStartRanking : null,
                   ),
                   SizedBox(height: 0.25.rem),
                   AppLinkButton(
                     text: 'Do this later',
-                    onPressed: _handleDoThisLater,
+                    onPressed: _isSubmitting ? null : _handleDoThisLater,
                   ),
                 ],
               ),
