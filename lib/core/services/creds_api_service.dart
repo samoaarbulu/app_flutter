@@ -47,6 +47,7 @@ class CredsUserProfile {
   final String onboardingStep;
   final bool profileCompleted;
   final bool hasLocationPermission;
+  final bool hasContactsPermission;
   final List<String> activities;
 
   const CredsUserProfile({
@@ -63,6 +64,7 @@ class CredsUserProfile {
     required this.onboardingStep,
     required this.profileCompleted,
     required this.hasLocationPermission,
+    this.hasContactsPermission = false,
     required this.activities,
   });
 
@@ -82,6 +84,7 @@ class CredsUserProfile {
       onboardingStep: (json['onboardingStep'] ?? 'verify_email') as String,
       profileCompleted: json['profileCompleted'] == true,
       hasLocationPermission: json['hasLocationPermission'] == true,
+      hasContactsPermission: json['hasContactsPermission'] == true,
       activities: rawActivities is List
           ? rawActivities.map((item) => item.toString()).toList()
           : const <String>[],

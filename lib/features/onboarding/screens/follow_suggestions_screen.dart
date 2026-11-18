@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/services/contacts_service.dart';
 import '../../../core/services/creds_api_service.dart';
@@ -265,13 +266,18 @@ class _FollowSuggestionsScreenState extends State<FollowSuggestionsScreen> {
         contactEmail: contact.email,
       );
       if (_shareMessage.isNotEmpty) {
-        await Clipboard.setData(ClipboardData(text: _shareMessage));
+        try {
+          await Share.share(_shareMessage, subject: 'Join me on Creds');
+        } catch (_) {
+          await Clipboard.setData(ClipboardData(text: _shareMessage));
+          if (mounted) {
+            AppFeedback.showSuccess(
+              context,
+              'Invite link copied for ${contact.name}.',
+            );
+          }
+        }
       }
-      if (!mounted) return;
-      AppFeedback.showSuccess(
-        context,
-        'Invite link copied for ${contact.name}.',
-      );
     } on CredsApiException catch (e) {
       if (!mounted) return;
       setState(() => _invitedIndices.remove(index));

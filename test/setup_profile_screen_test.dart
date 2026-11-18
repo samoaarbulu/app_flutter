@@ -10,7 +10,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: SetupProfileScreen(),
+          home: SetupProfileScreen(initialUsername: 'ana.entrena'),
         ),
       );
 
@@ -129,7 +129,28 @@ void main() {
       AppButton button = tester.widget<AppButton>(buttonFinder);
       expect(button.onPressed, isNull);
 
-      // Ingresar teléfono válido (10 dígitos)
+      // Ingresar username, nombres y teléfono válido (10 dígitos)
+      final usernameField = find.widgetWithText(AppTextField, 'Username');
+      final usernameInput = find.descendant(
+        of: usernameField,
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(usernameInput, '@ana.entrena');
+
+      final firstNameField = find.widgetWithText(AppTextField, 'First name');
+      final firstNameInput = find.descendant(
+        of: firstNameField,
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(firstNameInput, 'Ana');
+
+      final lastNameField = find.widgetWithText(AppTextField, 'Last name');
+      final lastNameInput = find.descendant(
+        of: lastNameField,
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(lastNameInput, 'Torres');
+
       final phoneField = find.widgetWithText(AppTextField, 'Mobile number');
       final phoneInput = find.descendant(
         of: phoneField,
@@ -144,12 +165,6 @@ void main() {
       expect(button.onPressed, isNotNull);
 
       // Si borramos el First name, el botón debe deshabilitarse nuevamente
-      final firstNameField = find.widgetWithText(AppTextField, 'First name');
-      final firstNameInput = find.descendant(
-        of: firstNameField,
-        matching: find.byType(TextFormField),
-      );
-
       await tester.enterText(firstNameInput, '');
       await tester.pumpAndSettle();
 

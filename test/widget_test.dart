@@ -79,7 +79,14 @@ void main() {
     );
     expect(find.text('Send code'), findsOneWidget);
 
-    // Ingresar contraseña válida y confirmación para habilitar el botón y ocultar el helper text
+    // Ingresar correo, contraseña válida y confirmación para habilitar el botón y ocultar el helper text
+    final emailField = find.widgetWithText(AppTextField, 'Email address');
+    final emailInput = find.descendant(
+      of: emailField,
+      matching: find.byType(TextFormField),
+    );
+    await tester.enterText(emailInput, 'ana.torres@correo.com');
+
     final passwordField =
         find.widgetWithText(AppTextField, 'Create a password');
     final passwordInput = find.descendant(
@@ -121,6 +128,8 @@ void main() {
     for (var i = 0; i < 6; i++) {
       await tester.enterText(otpFields.at(i), '${i + 1}');
     }
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Verify email'));
     await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
     expect(find.text('PROFILE'), findsOneWidget);
@@ -144,7 +153,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Username'), findsOneWidget);
-    expect(find.text('@ana.entrena'), findsOneWidget);
     expect(find.text('Mobile number'), findsOneWidget);
     expect(find.text('+52'), findsOneWidget);
     expect(
@@ -152,15 +160,34 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('First name'), findsOneWidget);
-    expect(find.text('Ana'), findsOneWidget);
     expect(find.text('Last name'), findsOneWidget);
-    expect(find.text('Torres'), findsOneWidget);
     expect(find.text('Save and continue'), findsOneWidget);
 
-    // Ingresar teléfono para habilitar el botón "Save and continue"
+    // Ingresar username, teléfono, nombre y apellido para habilitar "Save and continue"
+    await tester.enterText(
+      find.descendant(
+        of: find.widgetWithText(AppTextField, 'Username'),
+        matching: find.byType(TextFormField),
+      ),
+      '@ana.entrena',
+    );
     await tester.enterText(
       find.widgetWithText(TextFormField, '55 1234 5678'),
       '5512345678',
+    );
+    await tester.enterText(
+      find.descendant(
+        of: find.widgetWithText(AppTextField, 'First name'),
+        matching: find.byType(TextFormField),
+      ),
+      'Ana',
+    );
+    await tester.enterText(
+      find.descendant(
+        of: find.widgetWithText(AppTextField, 'Last name'),
+        matching: find.byType(TextFormField),
+      ),
+      'Torres',
     );
     await tester.pumpAndSettle();
 

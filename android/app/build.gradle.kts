@@ -34,8 +34,6 @@ android {
 
     buildTypes {
         debug {
-            // Sufijo .dev para desarrollo (Opción B)
-            applicationIdSuffix = ".dev"
             manifestPlaceholders["appLabel"] = "Creds (Dev)"
         }
         release {
