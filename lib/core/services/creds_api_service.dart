@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../features/home/models/home_feed_item.dart';
 import '../../features/onboarding/models/onboarding_place.dart';
 import '../config/app_config.dart';
 import 'media_service.dart';
@@ -1014,6 +1015,45 @@ class CredsApiService {
     if (lowerName.endsWith('.png')) return 'image/png';
     if (lowerName.endsWith('.webp')) return 'image/webp';
     return 'image/jpeg';
+  }
+
+  // ---------------------------------------------------------------------------
+  // ENDPOINTS DE FEED (`/v1/feed`)
+  // ---------------------------------------------------------------------------
+
+  /// `GET /v1/feed?tab=...&limit=...&offset=...`
+  Future<List<HomeFeedItem>> getFeed({
+    String tab = 'all',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para cargar el feed.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final json = await _sendJson(
+      method: 'GET',
+      path: '/feed',
+      queryParameters: {
+        'tab': tab,
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      },
+      requiresAuth: true,
+    );
+
+    final rawItems = json['items'];
+    if (rawItems is! List) {
+      return const [];
+    }
+    return rawItems
+        .whereType<Map<String, dynamic>>()
+        .map(HomeFeedItem.fromApiJson)
+        .toList();
   }
 
   // ---------------------------------------------------------------------------

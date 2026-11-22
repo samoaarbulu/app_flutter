@@ -39,18 +39,59 @@ class _HomeScreenState extends State<HomeScreen> {
     'All',
     'Following',
     'For you',
-    'Recommendations',
   ];
 
   int _selectedNavIndex = 0;
   String _selectedFilter = 'All';
   late List<HomeFeedItem> _feedItems;
+  bool _isLoadingFeed = false;
   bool _isSigningOut = false;
 
   @override
   void initState() {
     super.initState();
-    _feedItems = List<HomeFeedItem>.from(HomeFeedItem.sampleItems);
+    if (CredsApiService.instance.hasSession) {
+      _feedItems = [];
+      _loadFeed();
+    } else {
+      _feedItems = List<HomeFeedItem>.from(HomeFeedItem.sampleItems);
+    }
+  }
+
+  String _feedTabParamForFilter(String filter) {
+    return switch (filter) {
+      'Following' => 'following',
+      'For you' => 'for_you',
+      'Recommendations' => 'recommendations',
+      _ => 'all',
+    };
+  }
+
+  Future<void> _loadFeed() async {
+    if (!CredsApiService.instance.hasSession) return;
+    setState(() => _isLoadingFeed = true);
+    try {
+      final items = await CredsApiService.instance.getFeed(
+        tab: _feedTabParamForFilter(_selectedFilter),
+      );
+      if (!mounted) return;
+      setState(() {
+        _feedItems = items;
+        _isLoadingFeed = false;
+      });
+    } on CredsApiException catch (e) {
+      if (!mounted) return;
+      if (e.isNetworkOrOfflineError &&
+          CredsApiService.instance.offlineFallbackEnabled) {
+        setState(() {
+          _feedItems = List<HomeFeedItem>.from(HomeFeedItem.sampleItems);
+          _isLoadingFeed = false;
+        });
+      } else {
+        setState(() => _isLoadingFeed = false);
+        AppFeedback.showError(context, e.message);
+      }
+    }
   }
 
   /// Obtiene el nombre completo del usuario logeado (o respaldo legible).
@@ -318,11 +359,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             _buildMyListsTab(),
             _buildPlaceholderTab(
-              title: 'Explore',
-              description: 'Discover gyms, studios, and places near you.',
+              title: 'Log',
+              description: 'Log a workout visit and rank your favorite spots.',
             ),
             _buildPlaceholderTab(
-              title: 'Club',
+              title: 'Community',
               description: 'Connect with friends and see their latest workouts.',
             ),
             _buildProfileTab(
@@ -386,12 +427,19 @@ class _HomeScreenState extends State<HomeScreen> {
     required PickedImage? customPhoto,
     required String? photoUrl,
   }) {
-    final visibleItems = _filteredItems;
+    final visibleItems = CredsApiService.instance.hasSession
+        ? _feedItems
+        : _filteredItems;
 
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(1.5.rem, 0.5.rem, 1.5.rem, 1.5.rem),
-      children: [
+    return RefreshIndicator(
+      color: AppColors.primaryAction,
+      onRefresh: _loadFeed,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: EdgeInsets.fromLTRB(1.5.rem, 0.5.rem, 1.5.rem, 1.5.rem),
+        children: [
         // 1. Banner oscuro "Invite 5 friends"
         _buildInviteBanner(),
 
@@ -413,7 +461,16 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(height: 1.0.rem),
 
         // 4. Tarjetas del feed
-        if (visibleItems.isEmpty)
+        if (_isLoadingFeed)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 2.5.rem),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryAction,
+              ),
+            ),
+          )
+        else if (visibleItems.isEmpty)
           Padding(
             padding: EdgeInsets.symmetric(vertical: 2.5.rem),
             child: Center(
@@ -449,6 +506,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
       ],
+      ),
     );
   }
 
@@ -521,52 +579,36 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         SizedBox(width: 0.75.rem),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                userName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 0.875.rem, // 14 px
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+          child: Material(
+            color: AppColors.inputSurface,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24.0),
+              side: const BorderSide(color: AppColors.border, width: 1.0),
+            ),
+            child: InkWell(
+              onTap: () => _openNewRecommendation(
+                userName: userName,
+                initials: initials,
+                customPhoto: customPhoto,
+                photoUrl: photoUrl,
               ),
-              SizedBox(height: 0.375.rem),
-              Material(
-                color: AppColors.inputSurface,
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24.0),
-                  side: const BorderSide(color: AppColors.border, width: 1.0),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 1.0.rem,
+                  vertical: 0.8125.rem,
                 ),
-                child: InkWell(
-                  onTap: () => _openNewRecommendation(
-                    userName: userName,
-                    initials: initials,
-                    customPhoto: customPhoto,
-                    photoUrl: photoUrl,
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 1.0.rem,
-                      vertical: 0.6875.rem,
-                    ),
-                    child: Text(
-                      'Ask for recommendations',
-                      style: GoogleFonts.poppins(
-                        fontSize: 0.875.rem, // 14 px
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                child: Text(
+                  'Ask your people',
+                  style: GoogleFonts.poppins(
+                    fontSize: 0.875.rem, // 14 px
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -588,6 +630,9 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               HapticFeedback.selectionClick();
               setState(() => _selectedFilter = filter);
+              if (CredsApiService.instance.hasSession) {
+                _loadFeed();
+              }
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 160),
@@ -920,13 +965,14 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'My lists',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search_rounded),
-            label: 'Explore',
+            icon: Icon(Icons.add_circle_outline_rounded),
+            activeIcon: Icon(Icons.add_circle_rounded),
+            label: 'Log',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.groups_outlined),
             activeIcon: Icon(Icons.groups_rounded),
-            label: 'Club',
+            label: 'Community',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),
@@ -1102,7 +1148,26 @@ class _FeedPostCardState extends State<_FeedPostCard> {
 
           SizedBox(height: 0.75.rem),
 
-          // 4. Notas con See more / See less
+          // 4. Activities
+          RichText(
+            text: TextSpan(
+              style: GoogleFonts.poppins(
+                fontSize: 0.8125.rem,
+                color: AppColors.textPrimary,
+              ),
+              children: [
+                const TextSpan(
+                  text: 'Activities: ',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                TextSpan(text: item.activitiesText),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 0.5.rem),
+
+          // 5. Notas con See more / See less
           GestureDetector(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
             child: RichText(
@@ -1127,25 +1192,6 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                   ),
                 ],
               ),
-            ),
-          ),
-
-          SizedBox(height: 0.5.rem),
-
-          // 5. Activities
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.poppins(
-                fontSize: 0.8125.rem,
-                color: AppColors.textPrimary,
-              ),
-              children: [
-                const TextSpan(
-                  text: 'Activities: ',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                TextSpan(text: item.activitiesText),
-              ],
             ),
           ),
 

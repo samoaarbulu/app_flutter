@@ -125,49 +125,11 @@ class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
                             setState(() => _notificationsEnabled = val),
                       ),
 
-                      SizedBox(height: 1.25.rem),
-
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 1.0.rem,
-                          vertical: 0.875.rem,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.inputSurface,
-                          borderRadius: BorderRadius.circular(14.0),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.only(top: 1),
-                              child: Icon(
-                                Icons.verified_user_outlined,
-                                size: 18,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            SizedBox(width: 0.625.rem),
-                            Expanded(
-                              child: Text(
-                                'Next, confirm each permission. You can change them in Settings.',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 0.8125.rem,
-                                  color: AppColors.textSecondary,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
                       const Spacer(),
                       SizedBox(height: 1.5.rem),
 
                       AppButton(
-                        text: 'Continue with my selection',
+                        text: 'Continue',
                         variant: AppButtonVariant.primary,
                         isLoading: _isSubmitting,
                         onPressed: _isSubmitting
@@ -215,6 +177,7 @@ class _PermissionSwitchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: BoxConstraints(minHeight: 6.25.rem), // 100 px
       padding: EdgeInsets.symmetric(horizontal: 1.0.rem, vertical: 1.0.rem),
       decoration: BoxDecoration(
         color: AppColors.surface,

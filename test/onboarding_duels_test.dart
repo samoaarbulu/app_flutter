@@ -140,12 +140,12 @@ void main() {
       expect(find.text('Find friends who already use Creds.'), findsOneWidget);
 
       // Paso 10: FollowSuggestionsScreen -> HomeScreen
-      await tester.tap(find.text('Continue with my selection'));
+      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      expect(find.text('Training is better together'), findsOneWidget);
-      expect(find.text('Follow 2 and go to Home'), findsOneWidget);
+      expect(find.text('Find your people'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
 
-      await tester.tap(find.text('Follow 2 and go to Home'));
+      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       expect(find.text('CREDS'), findsOneWidget);
     });

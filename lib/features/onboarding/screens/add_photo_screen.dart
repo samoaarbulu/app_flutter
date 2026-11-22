@@ -544,8 +544,8 @@ class _AddPhotoScreenState extends State<AddPhotoScreen> {
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 10.5.rem, // ~168 px
-                  height: 10.5.rem, // ~168 px
+                  width: 12.5.rem, // 200 px
+                  height: 12.5.rem, // 200 px
                   decoration: BoxDecoration(
                     color: AppColors.badgeSurface,
                     shape: BoxShape.circle,

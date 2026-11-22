@@ -160,8 +160,8 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
   /// Badge circular con icono de pin de ubicación
   Widget _buildLocationBadge() {
     return Container(
-      width: 7.5.rem, // 120 px
-      height: 7.5.rem, // 120 px
+      width: 12.5.rem, // 200 px
+      height: 12.5.rem, // 200 px
       decoration: const BoxDecoration(
         color: AppColors.badgeSurface,
         shape: BoxShape.circle,
@@ -170,7 +170,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
         child: Icon(
           Icons.location_on_outlined,
           color: AppColors.iconSecondary,
-          size: 36,
+          size: 44,
         ),
       ),
     );

@@ -28,23 +28,21 @@ void main() {
         findsOneWidget,
       );
 
-      // Nombre del usuario e iniciales de respaldo cuando no hay foto
-      expect(find.text('Ana Torres'), findsOneWidget);
+      // Iniciales de respaldo cuando no hay foto y compositor "Ask your people"
       expect(find.text('AT'), findsOneWidget);
-      expect(find.text('Ask for recommendations'), findsOneWidget);
+      expect(find.text('Ask your people'), findsOneWidget);
 
       // Filtros y feed
       expect(find.text('All'), findsOneWidget);
       expect(find.text('Following'), findsOneWidget);
       expect(find.text('For you'), findsOneWidget);
-      expect(find.text('Recommendations'), findsOneWidget);
-      expect(find.text('Sofía Martínez rated Atlas Fitness'), findsOneWidget);
+      expect(find.text('Sofía Martínez gave creds to Atlas Fitness'), findsOneWidget);
 
       // Bottom navigation bar (5 tabs)
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('My lists'), findsOneWidget);
-      expect(find.text('Explore'), findsOneWidget);
-      expect(find.text('Club'), findsOneWidget);
+      expect(find.text('Log'), findsOneWidget);
+      expect(find.text('Community'), findsOneWidget);
       expect(find.text('Profile'), findsOneWidget);
     });
 
@@ -89,8 +87,8 @@ void main() {
       // Filtrar por "For you" y volver a "All"
       await tester.tap(find.text('For you'));
       await tester.pumpAndSettle();
-      expect(find.text('Sofía Martínez rated Atlas Fitness'), findsNothing);
-      expect(find.text('Luis Chacon rated Gym Fitness'), findsOneWidget);
+      expect(find.text('Sofía Martínez gave creds to Atlas Fitness'), findsNothing);
+      expect(find.text('Luis Chacon gave creds to Gym Fitness'), findsOneWidget);
 
       await tester.tap(find.text('All'));
       await tester.pumpAndSettle();
@@ -118,23 +116,24 @@ void main() {
         ),
       );
 
-      // 1. Tocar "Ask for recommendations"
-      await tester.tap(find.text('Ask for recommendations'));
+      // 1. Tocar "Ask your people"
+      await tester.tap(find.text('Ask your people'));
       await tester.pumpAndSettle();
 
-      expect(find.text('NEW RECOMMENDATION'), findsOneWidget);
-      expect(find.text('What recommendation do\nyou need?'), findsOneWidget);
+      expect(find.text('Ask your people'), findsWidgets);
 
-      // 2. Ingresar titular
-      final textFields = find.byType(TextField);
-      await tester.enterText(
-        textFields.at(0),
-        'Best yoga studio in Miraflores',
-      );
+      // 2. Seleccionar actividad en el bottom sheet "Select activity"
+      await tester.tap(find.text('Add activity'));
+      await tester.pumpAndSettle();
+      expect(find.text('Select activity'), findsOneWidget);
+      await tester.tap(find.text('Pilates').last);
       await tester.pump();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pilates'), findsWidgets);
 
       // 3. Seleccionar ubicación en el bottom sheet
-      await tester.tap(find.text('Location'));
+      await tester.tap(find.text('Select location'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Lima, Peru'));
       await tester.pumpAndSettle();
@@ -142,7 +141,7 @@ void main() {
 
       // 4. Ingresar detalles
       await tester.enterText(
-        textFields.at(1),
+        find.byType(TextField),
         'Looking for morning vinyasa classes with good natural light.',
       );
       await tester.pump();
@@ -151,14 +150,9 @@ void main() {
       await tester.tap(find.text('Post'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Ana is looking for recommendations:'), findsOneWidget);
       expect(find.text('@ana.torres'), findsOneWidget);
-      expect(
-        find.textContaining('Best yoga studio in Miraflores'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('Lima, Peru'), findsOneWidget);
-      expect(find.text('Share to get more responses'), findsOneWidget);
+      expect(find.textContaining('Pilates'), findsWidgets);
+      expect(find.textContaining('Lima, Peru'), findsWidgets);
       expect(find.text('Copy link'), findsOneWidget);
 
       // 6. Probar acción "Copy link"
@@ -167,11 +161,11 @@ void main() {
       expect(find.text('Recommendation link copied'), findsOneWidget);
 
       // 7. Regresar al Home y verificar que aparece en el feed
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Ana Torres asked about Best yoga studio in Miraflores'),
+        find.text('Ana Torres asked about Pilates'),
         findsOneWidget,
       );
     });

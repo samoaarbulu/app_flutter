@@ -331,6 +331,7 @@ class _ComparePlaceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18.0),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
+          constraints: BoxConstraints(minHeight: 9.5.rem), // 152 px
           padding: EdgeInsets.all(1.125.rem), // 18 px
           decoration: BoxDecoration(
             color: isSelected ? AppColors.inputSurface : AppColors.surface,

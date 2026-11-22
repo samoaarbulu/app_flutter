@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_feedback.dart';
@@ -195,12 +194,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   // 3. SUBCOMPONENTES MODULARES
   // -------------------------------------------------------------
 
-  /// Barra superior con botón de retorno y título "ACCOUNT"
+  /// Barra superior con botón de retorno
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      centerTitle: true,
       leading: IconButton(
         icon: const Icon(
           Icons.arrow_back,
@@ -208,15 +206,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           size: 24,
         ),
         onPressed: () => Navigator.of(context).maybePop(),
-      ),
-      title: Text(
-        'ACCOUNT',
-        style: GoogleFonts.poppins(
-          fontSize: 0.8125.rem, // 13 px
-          fontWeight: FontWeight.w700,
-          letterSpacing: 2.0,
-          color: AppColors.textPrimary,
-        ),
       ),
     );
   }

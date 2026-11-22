@@ -85,7 +85,7 @@ class RecommendationShareScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
-            Icons.arrow_back,
+            Icons.close_rounded,
             color: AppColors.textPrimary,
             size: 24,
           ),
@@ -156,46 +156,38 @@ class RecommendationShareScreen extends StatelessWidget {
 
                         SizedBox(height: 1.125.rem),
 
-                        Text(
-                          '$_firstName is looking for recommendations:',
-                          style: GoogleFonts.poppins(
-                            fontSize: 0.9375.rem,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-
-                        SizedBox(height: 0.375.rem),
-
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: const Icon(
-                                Icons.location_on_outlined,
-                                size: 17,
-                                color: AppColors.textPrimary,
-                              ),
+                        Text.rich(
+                          TextSpan(
+                            style: GoogleFonts.poppins(
+                              fontSize: 0.9375.rem,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
                             ),
-                            SizedBox(width: 0.375.rem),
-                            Expanded(
-                              child: Text(
-                                _locationHeadline,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 0.9375.rem,
-                                  fontWeight: FontWeight.w700,
+                            children: [
+                              TextSpan(
+                                text:
+                                    '$_firstName is looking for ${headline.trim()} in ',
+                              ),
+                              const WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: Icon(
+                                  Icons.location_on_outlined,
+                                  size: 16,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
-                            ),
-                          ],
+                              TextSpan(
+                                text:
+                                    ' ${(location ?? '').trim().isNotEmpty ? location!.trim() : 'Lima'}.',
+                              ),
+                            ],
+                          ),
                         ),
 
                         if (details.trim().isNotEmpty) ...[
                           SizedBox(height: 0.75.rem),
                           Text(
-                            'Details: ${details.trim()}',
+                            details.trim(),
                             style: GoogleFonts.poppins(
                               fontSize: 0.8125.rem,
                               fontWeight: FontWeight.w400,

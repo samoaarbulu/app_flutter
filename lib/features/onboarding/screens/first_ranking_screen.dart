@@ -153,6 +153,7 @@ class _RankedPlaceCard extends StatelessWidget {
         '${item.wins} of ${item.totalComparisons} comparisons won';
 
     return Container(
+      constraints: BoxConstraints(minHeight: 6.5625.rem), // 105 px
       padding: EdgeInsets.symmetric(
         horizontal: 1.0.rem,
         vertical: 1.0.rem,

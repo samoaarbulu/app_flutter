@@ -199,7 +199,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       const AppHeader(
                         title: 'Sign in',
                         description:
-                            'Sign in to revisit your places, comparisons and favorites.',
+                            'See your rankings, saved places, and what your people are up to.',
                       ),
 
                       SizedBox(height: 1.75.rem),
@@ -252,7 +252,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           Padding(
                             padding: EdgeInsets.symmetric(horizontal: 0.75.rem),
                             child: Text(
-                              'or continue with',
+                              'or',
                               style: GoogleFonts.poppins(
                                 fontSize: 0.8125.rem,
                                 color: AppColors.textMuted,
@@ -286,16 +286,6 @@ class _SignInScreenState extends State<SignInScreen> {
                         onPressed: () => AppFeedback.show(
                           context,
                           'Continue with Apple disponible en iOS',
-                        ),
-                      ),
-
-                      SizedBox(height: 1.25.rem),
-
-                      Text(
-                        'Signing in will take you straight to Home.',
-                        style: GoogleFonts.poppins(
-                          fontSize: 0.8125.rem,
-                          color: AppColors.textSecondary,
                         ),
                       ),
 
@@ -344,7 +334,6 @@ class _SignInScreenState extends State<SignInScreen> {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      centerTitle: true,
       leading: IconButton(
         icon: const Icon(
           Icons.arrow_back,
@@ -352,15 +341,6 @@ class _SignInScreenState extends State<SignInScreen> {
           size: 24,
         ),
         onPressed: () => Navigator.of(context).maybePop(),
-      ),
-      title: Text(
-        'ACCOUNT',
-        style: GoogleFonts.poppins(
-          fontSize: 0.8125.rem,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 2.0,
-          color: AppColors.textPrimary,
-        ),
       ),
     );
   }

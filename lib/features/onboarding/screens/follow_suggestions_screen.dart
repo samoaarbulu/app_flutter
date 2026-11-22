@@ -50,19 +50,19 @@ class _FollowSuggestionsScreenState extends State<FollowSuggestionsScreen> {
       id: 'p1',
       name: 'Luis Méndez',
       initials: 'LM',
-      subtitle: '@luis.mueve · 12 gyms',
+      subtitle: '@luis.mueve · 12 places',
     ),
     _SuggestedPerson(
       id: 'p2',
       name: 'Sofía Ruiz',
       initials: 'SR',
-      subtitle: '@sofi.fuerza · 8 gyms',
+      subtitle: '@sofi.fuerza · 8 places',
     ),
     _SuggestedPerson(
       id: 'p3',
       name: 'Diego Pérez',
       initials: 'DP',
-      subtitle: '@diego.activo · 15 gyms',
+      subtitle: '@diego.activo · 15 places',
     ),
   ];
 
@@ -297,11 +297,7 @@ class _FollowSuggestionsScreenState extends State<FollowSuggestionsScreen> {
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 
-  String get _primaryButtonText {
-    final count = _followingIds.length;
-    if (count == 0) return 'Follow and go to Home';
-    return 'Follow $count and go to Home';
-  }
+  String get _primaryButtonText => 'Continue';
 
   Future<void> _finishAndGoHome({required bool skipped}) async {
     if (_isSubmitting) return;
@@ -374,9 +370,9 @@ class _FollowSuggestionsScreenState extends State<FollowSuggestionsScreen> {
               SizedBox(height: 0.75.rem),
 
               const AppHeader(
-                title: 'Training is better together',
+                title: 'Find your people',
                 description:
-                    'Follow others to discover their favorite places. This step is optional.',
+                    'Follow people to discover where they go, what they rank, and what’s worth trying.',
               ),
 
               SizedBox(height: 1.25.rem),
@@ -412,12 +408,11 @@ class _FollowSuggestionsScreenState extends State<FollowSuggestionsScreen> {
 
               Text(
                 _selectedTab == 0
-                    ? 'PEOPLE WITH SIMILAR ACTIVITIES'
-                    : 'INVITE YOUR CONTACTS',
+                    ? 'People with similar taste'
+                    : 'Invite your contacts',
                 style: GoogleFonts.poppins(
-                  fontSize: 0.75.rem,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.0,
+                  fontSize: 0.8125.rem,
+                  fontWeight: FontWeight.w500,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -671,7 +666,7 @@ class _FollowSuggestionsScreenState extends State<FollowSuggestionsScreen> {
 
               Center(
                 child: AppLinkButton(
-                  text: 'Not now, go to Home',
+                  text: 'Skip for now',
                   onPressed: _isSubmitting
                       ? null
                       : () => _finishAndGoHome(skipped: true),
