@@ -26,7 +26,7 @@ class UsefulPermissionsScreen extends StatefulWidget {
 
 class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
   bool _contactsEnabled = false;
-  bool _notificationsEnabled = true;
+  bool _notificationsEnabled = false;
   bool _isSubmitting = false;
 
   Future<void> _saveAndContinue({required bool skipped}) async {

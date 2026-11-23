@@ -28,7 +28,7 @@ class PreloadingScreen extends StatefulWidget {
 
   const PreloadingScreen({
     super.key,
-    this.duration = const Duration(milliseconds: 2600),
+    this.duration = const Duration(milliseconds: 500),
     this.onComplete,
   });
 
@@ -66,7 +66,7 @@ class _PreloadingScreenState extends State<PreloadingScreen>
     // 3. Precargar el video de bienvenida durante el splash para evitar lag.
     _videoPreloadFuture = _preloadPresentationVideo();
 
-    // 4. Temporizador de 2.6s para navegar automáticamente al terminar el splash.
+    // 4. Espera mínima de entrada (500ms) antes de navegar apenas estén listos sesión y video.
     _navigationTimer = Timer(
       widget.duration,
       () => _navigateToPresentation(waitForVideo: true),
@@ -159,7 +159,7 @@ class _PreloadingScreenState extends State<PreloadingScreen>
     } else {
       if (waitForVideo && _videoPreloadFuture != null) {
         await _videoPreloadFuture!.timeout(
-          const Duration(milliseconds: 1200),
+          const Duration(milliseconds: 800),
           onTimeout: () {},
         );
       }
