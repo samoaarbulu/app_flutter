@@ -222,9 +222,12 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
   Widget build(BuildContext context) {
     final searchMatches = _searchResults;
     final canStartRanking = _selectedPlaces.length >= 3;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final isKeyboardVisible = keyboardInset > 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: false,
       appBar: _buildAppBar(context),
       body: SafeArea(
         child: Column(
@@ -233,7 +236,14 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 1.5.rem),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  1.5.rem,
+                  0,
+                  1.5.rem,
+                  keyboardInset,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -324,32 +334,33 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
               ),
             ),
 
-            // Pie fijo con Start ranking y Do this later
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                1.5.rem,
-                0.75.rem,
-                1.5.rem,
-                0.75.rem,
+            // Pie fijo con Start ranking y Do this later (oculto mientras el teclado está abierto)
+            if (!isKeyboardVisible)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  1.5.rem,
+                  0.75.rem,
+                  1.5.rem,
+                  0.75.rem,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppButton(
+                      text: 'Start ranking',
+                      variant: AppButtonVariant.primary,
+                      isLoading: _isSubmitting,
+                      onPressed:
+                          (canStartRanking && !_isSubmitting) ? _handleStartRanking : null,
+                    ),
+                    SizedBox(height: 0.25.rem),
+                    AppLinkButton(
+                      text: 'Do this later',
+                      onPressed: _isSubmitting ? null : _handleDoThisLater,
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppButton(
-                    text: 'Start ranking',
-                    variant: AppButtonVariant.primary,
-                    isLoading: _isSubmitting,
-                    onPressed:
-                        (canStartRanking && !_isSubmitting) ? _handleStartRanking : null,
-                  ),
-                  SizedBox(height: 0.25.rem),
-                  AppLinkButton(
-                    text: 'Do this later',
-                    onPressed: _isSubmitting ? null : _handleDoThisLater,
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
