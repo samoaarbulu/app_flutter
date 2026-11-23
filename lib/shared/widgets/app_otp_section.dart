@@ -50,7 +50,8 @@ class AppOtpSection extends StatefulWidget {
     this.onChanged,
     this.onCompleted,
     this.resendPrompt = 'Didn\'t get the code?',
-    this.resendCountdownSeconds = 28,
+    this.resendCountdownSeconds =
+        28, //tiempo de espera para presionar "Resent Code"
     this.onResend,
     this.infoMessage =
         'The code expires in 10 minutes. Check your spam folder too.',

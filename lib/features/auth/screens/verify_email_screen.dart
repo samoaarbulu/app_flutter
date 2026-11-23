@@ -26,7 +26,7 @@ class VerifyEmailScreen extends StatefulWidget {
 
   const VerifyEmailScreen({
     super.key,
-    this.email = 'ana.torres@correo.com',
+    this.email = 'jmejia@correo.com',
     this.devOtpCode,
     this.onVerified,
   });
@@ -88,11 +88,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         if (widget.onVerified != null) {
           widget.onVerified!(_enteredCode);
         } else {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const AddPhotoScreen(),
-            ),
-          );
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const AddPhotoScreen()));
         }
         return;
       }
