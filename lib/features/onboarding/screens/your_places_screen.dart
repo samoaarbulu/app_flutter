@@ -39,12 +39,14 @@ class YourPlacesScreen extends StatefulWidget {
 
 class _YourPlacesScreenState extends State<YourPlacesScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   late final List<OnboardingPlace> _selectedPlaces;
   List<OnboardingPlace> _searchResults = const [];
   Timer? _searchDebounce;
   int _searchRequestId = 0;
   bool _isSearching = false;
   bool _isSubmitting = false;
+  bool _isSearchMode = false;
 
   @override
   void initState() {
@@ -60,7 +62,22 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
     _searchDebounce?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _enterSearchMode() {
+    if (_isSearchMode) return;
+    setState(() => _isSearchMode = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _searchFocusNode.requestFocus();
+    });
+  }
+
+  void _exitSearchMode() {
+    _searchFocusNode.unfocus();
+    if (!_isSearchMode) return;
+    setState(() => _isSearchMode = false);
   }
 
   void _onSearchChanged() {
@@ -133,10 +150,12 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
     HapticFeedback.selectionClick();
     _searchDebounce?.cancel();
     _searchRequestId++;
+    _searchFocusNode.unfocus();
     setState(() {
       _selectedPlaces.add(place);
       _searchResults = const [];
       _isSearching = false;
+      _isSearchMode = false;
       _searchController.clear();
     });
   }
@@ -222,61 +241,61 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
   Widget build(BuildContext context) {
     final searchMatches = _searchResults;
     final canStartRanking = _selectedPlaces.length >= 3;
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final isKeyboardVisible = keyboardInset > 0;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      resizeToAvoidBottomInset: false,
-      appBar: _buildAppBar(context),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.fromLTRB(
-                  1.5.rem,
-                  0,
-                  1.5.rem,
-                  keyboardInset,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return PopScope(
+      canPop: !_isSearchMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _isSearchMode) {
+          _exitSearchMode();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: _isSearchMode ? null : _buildAppBar(context),
+        body: SafeArea(
+          child: _isSearchMode
+              ? _buildFocusedSearchView(searchMatches)
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: 0.5.rem),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.symmetric(horizontal: 1.5.rem),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 0.5.rem),
 
-                    const AppHeader(
-                      title: "Start with places you've\ntried",
-                      description:
-                          "Add at least 3 places you've been to. We'll use them to build your first ranking.",
-                    ),
+                            const AppHeader(
+                              title: "Start with places you've\ntried",
+                              description:
+                                  "Add at least 3 places you've been to. We'll use them to build your first ranking.",
+                            ),
 
-                    SizedBox(height: 1.5.rem),
+                            SizedBox(height: 1.5.rem),
 
-                    // Buscador reutilizando AppTextField
-                    AppTextField(
-                      controller: _searchController,
-                      hintText: "Search places you've been",
-                      prefixIcon: const Icon(Icons.search_rounded, size: 22),
-                    ),
+                            // Buscador reutilizando AppTextField
+                            AppTextField(
+                              controller: _searchController,
+                              hintText: "Search places you've been",
+                              prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                              onTap: _enterSearchMode,
+                            ),
 
-                    if (_isSearching) ...[
-                      SizedBox(height: 0.5.rem),
-                      const LinearProgressIndicator(
-                        minHeight: 2,
-                        color: AppColors.primaryAction,
-                        backgroundColor: AppColors.inputSurface,
-                      ),
-                    ] else if (searchMatches.isNotEmpty) ...[
-                      SizedBox(height: 0.5.rem),
-                      _buildSearchSuggestions(searchMatches),
-                    ],
+                            if (_isSearching) ...[
+                              SizedBox(height: 0.5.rem),
+                              const LinearProgressIndicator(
+                                minHeight: 2,
+                                color: AppColors.primaryAction,
+                                backgroundColor: AppColors.inputSurface,
+                              ),
+                            ] else if (searchMatches.isNotEmpty) ...[
+                              SizedBox(height: 0.5.rem),
+                              _buildSearchSuggestions(searchMatches),
+                            ],
 
-                    SizedBox(height: 1.5.rem),
+                            SizedBox(height: 1.5.rem),
 
                     // Encabezado de lista: PLACES  |  3 added
                     Row(
@@ -334,36 +353,159 @@ class _YourPlacesScreenState extends State<YourPlacesScreen> {
               ),
             ),
 
-            // Pie fijo con Start ranking y Do this later (oculto mientras el teclado está abierto)
-            if (!isKeyboardVisible)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  1.5.rem,
-                  0.75.rem,
-                  1.5.rem,
-                  0.75.rem,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppButton(
-                      text: 'Start ranking',
-                      variant: AppButtonVariant.primary,
-                      isLoading: _isSubmitting,
-                      onPressed:
-                          (canStartRanking && !_isSubmitting) ? _handleStartRanking : null,
-                    ),
-                    SizedBox(height: 0.25.rem),
-                    AppLinkButton(
-                      text: 'Do this later',
-                      onPressed: _isSubmitting ? null : _handleDoThisLater,
-                    ),
-                  ],
-                ),
+            // Pie fijo con Start ranking y Do this later
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                1.5.rem,
+                0.75.rem,
+                1.5.rem,
+                0.75.rem,
               ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppButton(
+                    text: 'Start ranking',
+                    variant: AppButtonVariant.primary,
+                    isLoading: _isSubmitting,
+                    onPressed:
+                        (canStartRanking && !_isSubmitting) ? _handleStartRanking : null,
+                  ),
+                  SizedBox(height: 0.25.rem),
+                  AppLinkButton(
+                    text: 'Do this later',
+                    onPressed: _isSubmitting ? null : _handleDoThisLater,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
+        ),
       ),
+    );
+  }
+
+  /// Vista enfocada de búsqueda (estilo Instagram/Rappi) cuando el usuario toca el buscador.
+  Widget _buildFocusedSearchView(List<OnboardingPlace> searchMatches) {
+    final query = _searchController.text.trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(0.5.rem, 0.75.rem, 1.5.rem, 0.5.rem),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppColors.textPrimary,
+                  size: 24,
+                ),
+                onPressed: _exitSearchMode,
+              ),
+              Expanded(
+                child: AppTextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  hintText: "Search places you've been",
+                  prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                  suffixIcon: query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => _searchController.clear(),
+                        )
+                      : null,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_isSearching)
+          const LinearProgressIndicator(
+            minHeight: 2,
+            color: AppColors.primaryAction,
+            backgroundColor: AppColors.inputSurface,
+          ),
+        Expanded(
+          child: query.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 1.5.rem),
+                    child: Text(
+                      'Type a gym, studio or spot name to search.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 0.875.rem,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                )
+              : searchMatches.isEmpty && !_isSearching
+                  ? Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 1.5.rem),
+                        child: Text(
+                          'No places found for "$query".',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 0.875.rem,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      physics: const BouncingScrollPhysics(),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 1.5.rem,
+                        vertical: 0.5.rem,
+                      ),
+                      itemCount: searchMatches.length,
+                      separatorBuilder: (_, _) =>
+                          const Divider(height: 1, color: AppColors.border),
+                      itemBuilder: (context, index) {
+                        final place = searchMatches[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 0.25.rem,
+                            vertical: 0.125.rem,
+                          ),
+                          leading: Icon(
+                            place.icon,
+                            size: 22,
+                            color: AppColors.iconSecondary,
+                          ),
+                          title: Text(
+                            place.name,
+                            style: GoogleFonts.poppins(
+                              fontSize: 0.9375.rem,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${place.neighborhood} · ${place.shortCategory}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 0.8125.rem,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.add_circle_outline_rounded,
+                            color: AppColors.primaryAction,
+                            size: 22,
+                          ),
+                          onTap: () => _addPlace(place),
+                        );
+                      },
+                    ),
+        ),
+      ],
     );
   }
 

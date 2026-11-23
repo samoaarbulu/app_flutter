@@ -8,6 +8,7 @@ import '../../../core/utils/app_feedback.dart';
 import '../../../core/utils/app_rem.dart';
 import '../../../shared/widgets/app_header.dart';
 import '../../../shared/widgets/app_link_button.dart';
+import '../../../shared/widgets/app_loading_overlay.dart';
 import '../models/onboarding_place.dart';
 import 'first_ranking_screen.dart';
 
@@ -35,6 +36,7 @@ class _ComparePlacesScreenState extends State<ComparePlacesScreen> {
   int _currentIndex = 0;
   String? _highlightedId;
   bool _isTransitioning = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -105,6 +107,7 @@ class _ComparePlacesScreenState extends State<ComparePlacesScreen> {
     }
 
     if (CredsApiService.instance.hasSession) {
+      setState(() => _isSubmitting = true);
       try {
         final comparisons = <CredsDuelComparisonInput>[];
         for (var i = 0; i < _pairs.length; i++) {
@@ -135,9 +138,16 @@ class _ComparePlacesScreenState extends State<ComparePlacesScreen> {
       } on CredsApiException catch (e) {
         if (!mounted) return;
         if (!e.isNetworkOrOfflineError) {
-          setState(() => _isTransitioning = false);
+          setState(() {
+            _isSubmitting = false;
+            _isTransitioning = false;
+          });
           AppFeedback.showError(context, e.message);
           return;
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
         }
       }
     }
@@ -185,10 +195,13 @@ class _ComparePlacesScreenState extends State<ComparePlacesScreen> {
   Widget build(BuildContext context) {
     final (leftPlace, rightPlace) = _pairs[_currentIndex];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: _buildAppBar(),
-      body: SafeArea(
+    return AppLoadingOverlay(
+      isLoading: _isSubmitting,
+      message: 'Building your first ranking...',
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: _buildAppBar(),
+        body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
@@ -247,6 +260,7 @@ class _ComparePlacesScreenState extends State<ComparePlacesScreen> {
             );
           },
         ),
+      ),
       ),
     );
   }

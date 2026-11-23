@@ -40,6 +40,7 @@ class AppTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
+  final VoidCallback? onTap;
   final FormFieldValidator<String>? validator;
   final bool autofocus;
   final bool readOnly;
@@ -67,6 +68,7 @@ class AppTextField extends StatefulWidget {
     this.textInputAction,
     this.onChanged,
     this.onFieldSubmitted,
+    this.onTap,
     this.validator,
     this.autofocus = false,
     this.readOnly = false,
@@ -88,6 +90,7 @@ class AppTextField extends StatefulWidget {
     this.textInputAction,
     this.onChanged,
     this.onFieldSubmitted,
+    this.onTap,
     this.validator,
     this.autofocus = false,
     this.readOnly = false,
@@ -121,6 +124,7 @@ class AppTextField extends StatefulWidget {
     this.textInputAction,
     this.onChanged,
     this.onFieldSubmitted,
+    this.onTap,
     this.validator,
     this.autofocus = false,
     this.readOnly = false,
@@ -324,6 +328,7 @@ class _AppTextFieldState extends State<AppTextField> {
                     widget.onChanged?.call(value);
                   },
                   onFieldSubmitted: widget.onFieldSubmitted,
+                  onTap: widget.onTap,
                   validator: widget.validator,
                   autofocus: widget.autofocus,
                   readOnly: widget.readOnly,
