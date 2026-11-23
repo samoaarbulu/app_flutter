@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -6,10 +8,11 @@ import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/screens/preloading_screen.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await FirebaseInitializer.initialize();
+  // Inicializar Firebase en segundo plano sin bloquear el primer frame de la app.
+  unawaited(FirebaseInitializer.initialize());
 
   // Configuración de la barra de estado y navegación del sistema (Creds Light)
   SystemChrome.setSystemUIOverlayStyle(

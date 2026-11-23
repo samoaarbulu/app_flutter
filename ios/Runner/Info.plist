@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSContactsUsageDescription</key>
 	<string>Creds uses your contacts to find friends already on Creds and let you invite others.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Creds uses your location to find nearby spots and give better recommendations.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

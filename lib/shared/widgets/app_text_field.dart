@@ -165,6 +165,9 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   void didUpdateWidget(covariant AppTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.errorText != null && widget.errorText == null) {
+      _localErrorText = null;
+    }
     if (widget.focusNode != oldWidget.focusNode) {
       oldWidget.focusNode?.removeListener(_onFocusChange);
       _effectiveFocusNode.addListener(_onFocusChange);

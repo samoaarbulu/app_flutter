@@ -185,6 +185,22 @@ void main() {
           find.text('Use 8 or more characters, a letter and a number.'),
           findsNothing,
         );
+
+        // 6. Modificar el primer input mientras Confirm password ya tiene texto
+        await tester.enterText(passwordInput, 'claveSegura2026a');
+        await tester.pump();
+
+        expect(find.text('Passwords do not match'), findsOneWidget);
+        button = tester.widget<AppButton>(buttonFinder);
+        expect(button.onPressed, isNull);
+
+        // Al volver a coincidir, el error desaparece inmediatamente
+        await tester.enterText(passwordInput, 'claveSegura2026');
+        await tester.pump();
+
+        expect(find.text('Passwords do not match'), findsNothing);
+        button = tester.widget<AppButton>(buttonFinder);
+        expect(button.onPressed, isNotNull);
       },
     );
   });

@@ -22,6 +22,21 @@ class FirstRankingScreen extends StatelessWidget {
     this.onSaveAndContinue,
   });
 
+  List<int> _computeDisplayRanks() {
+    final ranks = <int>[];
+    for (var i = 0; i < rankedPlaces.length; i++) {
+      final item = rankedPlaces[i];
+      if (item.rankPosition != null) {
+        ranks.add(item.rankPosition!);
+      } else if (i > 0 && item.wins == rankedPlaces[i - 1].wins) {
+        ranks.add(ranks[i - 1]);
+      } else {
+        ranks.add(i + 1);
+      }
+    }
+    return ranks;
+  }
+
   void _handleSaveAndContinue(BuildContext context) {
     if (onSaveAndContinue != null) {
       onSaveAndContinue!();
@@ -82,17 +97,24 @@ class FirstRankingScreen extends StatelessWidget {
 
                     SizedBox(height: 0.75.rem),
 
-                    ...List.generate(rankedPlaces.length, (index) {
-                      final item = rankedPlaces[index];
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: 0.75.rem),
-                        child: _RankedPlaceCard(
-                          rank: index + 1,
-                          item: item,
-                          isWinner: index == 0,
-                        ),
-                      );
-                    }),
+                    ...() {
+                      final ranks = _computeDisplayRanks();
+                      return List.generate(rankedPlaces.length, (index) {
+                        final item = rankedPlaces[index];
+                        final rank = ranks[index];
+                        final isWinner = item.rankPosition != null
+                            ? (item.isTopChoice || rank == 1)
+                            : rank == 1;
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 0.75.rem),
+                          child: _RankedPlaceCard(
+                            rank: rank,
+                            item: item,
+                            isWinner: isWinner,
+                          ),
+                        );
+                      });
+                    }(),
 
                     SizedBox(height: 1.0.rem),
                   ],
@@ -148,9 +170,13 @@ class _RankedPlaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rankLabel = rank.toString().padLeft(2, '0');
+    final rankLabel = (item.rankLabel != null && item.rankLabel!.isNotEmpty)
+        ? item.rankLabel!
+        : rank.toString().padLeft(2, '0');
     final subtitle =
-        '${item.wins} of ${item.totalComparisons} comparisons won';
+        (item.summaryLabel != null && item.summaryLabel!.isNotEmpty)
+            ? item.summaryLabel!
+            : '${item.wins} of ${item.totalComparisons} comparisons won';
 
     return Container(
       constraints: BoxConstraints(minHeight: 6.5625.rem), // 105 px

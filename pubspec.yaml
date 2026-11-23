@@ -43,6 +43,7 @@ dependencies:
   google_sign_in: ^6.2.2
   image_picker: ^1.2.4
   flutter_contacts: ^1.1.9+2
+  geolocator: ^13.0.2
   share_plus: ^10.1.4
   http: ^1.6.0
 

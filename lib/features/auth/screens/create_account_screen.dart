@@ -138,6 +138,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool get _isConfirmPasswordValid =>
       _validateConfirmPassword(_confirmPasswordController.text) == null;
 
+  String? get _confirmPasswordMismatchError {
+    final confirmText = _confirmPasswordController.text;
+    if (confirmText.isEmpty) {
+      return null;
+    }
+    if (confirmText != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
   /// Helper text dinámico: se oculta cuando la contraseña ya cumple
   String? get _effectivePasswordHelperText {
     if (_isPasswordValid) {
@@ -329,6 +340,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           controller: _confirmPasswordController,
           label: 'Confirm password',
           hintText: 'Confirm your password',
+          errorText: _confirmPasswordMismatchError,
           textInputAction: TextInputAction.done,
           validateOnFocusLoss: true,
           focusLossValidator: _validateConfirmPassword,

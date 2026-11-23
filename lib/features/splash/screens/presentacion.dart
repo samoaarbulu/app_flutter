@@ -22,6 +22,7 @@ import '../../auth/screens/sign_in_screen.dart';
 class PresentationScreen extends StatefulWidget {
   final VoidCallback? onGetStarted;
   final VoidCallback? onSignIn;
+  final VideoPlayerController? preloadedVideoController;
 
   /// Si es `true` (por defecto), muestra el título de marca ("Creds") en la parte superior.
   /// Si es `false`, lo oculta.
@@ -31,6 +32,7 @@ class PresentationScreen extends StatefulWidget {
     super.key,
     this.onGetStarted,
     this.onSignIn,
+    this.preloadedVideoController,
     this.showBrandTitle = false, //true para mostrar logo por etxto
   });
 
@@ -47,7 +49,14 @@ class _PresentationScreenState extends State<PresentationScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeVideoPlayer();
+    final preloaded = widget.preloadedVideoController;
+    if (preloaded != null && preloaded.value.isInitialized) {
+      _videoController = preloaded;
+      _isVideoInitialized = true;
+      _videoController!.play();
+    } else {
+      _initializeVideoPlayer();
+    }
   }
 
   Future<void> _initializeVideoPlayer() async {

@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_rem.dart';
 import '../../auth/services/auth_service.dart';
 import '../../../core/services/creds_api_service.dart';
+import '../../../core/services/firebase_initializer.dart';
 import '../../onboarding/navigation/onboarding_navigator.dart';
 import 'presentacion.dart';
 
@@ -39,6 +41,9 @@ class _PreloadingScreenState extends State<PreloadingScreen>
   late final AnimationController _floatController;
   Timer? _navigationTimer;
   Future<CredsUserProfile?>? _sessionCheckFuture;
+  Future<void>? _videoPreloadFuture;
+  VideoPlayerController? _preloadedVideoController;
+  bool _handedOffVideoController = false;
   bool _hasNavigated = false;
 
   @override
@@ -52,24 +57,55 @@ class _PreloadingScreenState extends State<PreloadingScreen>
     )..repeat();
 
     // 2. Validar o restaurar sesión en paralelo mientras corre la animación.
-    //    - Si hay JWT del backend en RAM, consultamos GET /v1/auth/me.
-    //    - Si se recargó la app (RAM vacía) pero Firebase tiene sesión en caché,
-    //      restauramos el usuario de Firebase y lo canjeamos en el backend.
-    if (CredsApiService.instance.hasSession ||
+    if (FirebaseInitializer.hasStarted ||
+        CredsApiService.instance.hasSession ||
         AuthService.instance.isFirebaseReady) {
       _sessionCheckFuture = _checkActiveSession();
     }
 
-    // 3. Temporizador de 2.6s para navegar automáticamente al terminar el splash.
-    _navigationTimer = Timer(widget.duration, _navigateToPresentation);
+    // 3. Precargar el video de bienvenida durante el splash para evitar lag.
+    _videoPreloadFuture = _preloadPresentationVideo();
+
+    // 4. Temporizador de 2.6s para navegar automáticamente al terminar el splash.
+    _navigationTimer = Timer(
+      widget.duration,
+      () => _navigateToPresentation(waitForVideo: true),
+    );
+  }
+
+  Future<void> _preloadPresentationVideo() async {
+    try {
+      final controller = VideoPlayerController.asset(
+        'assets/video/fondo_presentacion.mp4',
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
+      await controller.initialize();
+      await controller.setVolume(0.0);
+      await controller.setLooping(true);
+      if (!mounted || _hasNavigated) {
+        await controller.dispose();
+        return;
+      }
+      _preloadedVideoController = controller;
+    } catch (e) {
+      debugPrint('Error al precargar video de fondo: $e');
+    }
   }
 
   /// Verifica si el usuario ya tiene sesión válida en el backend CREDS.
   Future<CredsUserProfile?> _checkActiveSession() async {
     try {
+      if (!AuthService.instance.isFirebaseReady) {
+        await FirebaseInitializer.initialize();
+      }
+
       // Caso A: Ya tenemos accessToken del backend en memoria RAM.
       if (CredsApiService.instance.hasSession) {
         return await CredsApiService.instance.getMe();
+      }
+
+      if (!AuthService.instance.isFirebaseReady) {
+        return null;
       }
 
       // Caso B: RAM limpia (ej. recarga F5), pero Firebase recuerda cuenta Google.
@@ -101,7 +137,7 @@ class _PreloadingScreenState extends State<PreloadingScreen>
   }
 
   /// Ejecuta la transición con cross-fade al terminar el splash o tocar la pantalla.
-  Future<void> _navigateToPresentation() async {
+  Future<void> _navigateToPresentation({bool waitForVideo = false}) async {
     if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
 
@@ -116,10 +152,28 @@ class _PreloadingScreenState extends State<PreloadingScreen>
     if (!mounted) return;
 
     // Con sesión activa: va directo a Home o al paso pendiente del onboarding.
-    // Sin sesión activa: abre la pantalla de bienvenida con video.
-    final Widget destination = activeProfile != null
-        ? OnboardingNavigator.screenForProfile(activeProfile)
-        : const PresentationScreen();
+    // Sin sesión activa: abre la pantalla de bienvenida con video precargado.
+    final Widget destination;
+    if (activeProfile != null) {
+      destination = OnboardingNavigator.screenForProfile(activeProfile);
+    } else {
+      if (waitForVideo && _videoPreloadFuture != null) {
+        await _videoPreloadFuture!.timeout(
+          const Duration(milliseconds: 1200),
+          onTimeout: () {},
+        );
+      }
+      if (!mounted) return;
+      if (_preloadedVideoController != null &&
+          _preloadedVideoController!.value.isInitialized) {
+        await _preloadedVideoController!.play();
+      }
+      if (!mounted) return;
+      _handedOffVideoController = _preloadedVideoController != null;
+      destination = PresentationScreen(
+        preloadedVideoController: _preloadedVideoController,
+      );
+    }
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
@@ -136,6 +190,9 @@ class _PreloadingScreenState extends State<PreloadingScreen>
   void dispose() {
     _navigationTimer?.cancel();
     _floatController.dispose();
+    if (!_handedOffVideoController) {
+      _preloadedVideoController?.dispose();
+    }
     super.dispose();
   }
 
