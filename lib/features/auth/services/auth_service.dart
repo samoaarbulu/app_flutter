@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/creds_api_service.dart';
+import '../../../core/services/push_notification_service.dart';
 
 /// Servicio singleton de autenticación con soporte para Web y Móvil (Android/iOS).
 ///
@@ -151,6 +152,7 @@ class AuthService {
   /// Cierre de sesión en CREDS Backend, Firebase y Google
   Future<void> signOut() async {
     _customPhoto = null;
+    await PushNotificationService.instance.unregisterCurrentToken();
     CredsApiService.instance.clearSession();
     if (!kIsWeb) {
       await _googleSignIn.signOut();

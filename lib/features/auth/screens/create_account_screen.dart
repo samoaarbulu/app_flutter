@@ -166,7 +166,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     if (!_isFormValid) {
       AppFeedback.showError(
         context,
-        'Por favor verifica los campos del formulario',
+        'Please check the form fields',
       );
       return;
     }
@@ -222,7 +222,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      AppFeedback.showError(context, 'Error al enviar el código: $e');
+      AppFeedback.showError(context, 'Could not send code: $e');
     }
   }
 

@@ -59,7 +59,7 @@ class _AuthLandingScreenState extends State<AuthLandingScreen> {
         final backendUser = CredsApiService.instance.currentUser;
         final userName =
             backendUser?.firstName ?? credential.user!.displayName ?? 'Usuario';
-        AppFeedback.showSuccess(context, '¡Bienvenido $userName!');
+        AppFeedback.showSuccess(context, 'Welcome, $userName!');
         await OnboardingNavigator.navigateFromProfile(
           context,
           backendUser,
@@ -71,7 +71,7 @@ class _AuthLandingScreenState extends State<AuthLandingScreen> {
       if (!mounted) return;
       AppFeedback.showError(
         context,
-        'Error al iniciar sesión con Google: $e',
+        'Google sign-in failed: $e',
       );
     } finally {
       if (mounted) {
@@ -190,7 +190,7 @@ class _AuthLandingScreenState extends State<AuthLandingScreen> {
           variant: AppButtonVariant.outline,
           icon: const Icon(Icons.apple, color: AppColors.textPrimary, size: 24),
           onPressed: widget.onAppleSignIn ??
-              () => AppFeedback.show(context, 'Continue with Apple presionado'),
+              () => AppFeedback.show(context, 'Continue with Apple coming soon'),
         ),
 
         SizedBox(height: 1.5.rem), // 24 px

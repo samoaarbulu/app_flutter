@@ -110,7 +110,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen> {
       } catch (e) {
         if (!mounted) return;
         setState(() => _isLoading = false);
-        AppFeedback.showError(context, 'No se pudo guardar tu foto: $e');
+        AppFeedback.showError(context, 'Could not save your photo: $e');
         return;
       }
     } else {

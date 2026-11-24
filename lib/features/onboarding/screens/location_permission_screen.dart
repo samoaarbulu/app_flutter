@@ -65,7 +65,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
       if (!mounted) return;
       AppFeedback.showError(
         context,
-        'Error al guardar preferencia de ubicación: $e',
+        'Could not save location preference: $e',
       );
     } finally {
       if (mounted) {

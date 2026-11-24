@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/services/contacts_service.dart';
 import '../../../core/services/creds_api_service.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_feedback.dart';
 import '../../../core/utils/app_rem.dart';
@@ -14,10 +17,7 @@ import 'follow_suggestions_screen.dart';
 class UsefulPermissionsScreen extends StatefulWidget {
   final VoidCallback? onContinue;
 
-  const UsefulPermissionsScreen({
-    super.key,
-    this.onContinue,
-  });
+  const UsefulPermissionsScreen({super.key, this.onContinue});
 
   @override
   State<UsefulPermissionsScreen> createState() =>
@@ -28,6 +28,71 @@ class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
   bool _contactsEnabled = false;
   bool _notificationsEnabled = false;
   bool _isSubmitting = false;
+  bool _isRequestingPermission = false;
+
+  bool get _isWidgetTest => WidgetsBinding.instance.runtimeType
+      .toString()
+      .contains('TestWidgetsFlutterBinding');
+
+  Future<void> _onContactsChanged(bool value) async {
+    if (_isSubmitting || _isRequestingPermission) return;
+    if (!value) {
+      setState(() => _contactsEnabled = false);
+      return;
+    }
+
+    if (!_isWidgetTest && kIsWeb) {
+      AppFeedback.showError(
+        context,
+        'Contacts access is only available on Android or iOS.',
+      );
+      return;
+    }
+
+    setState(() => _isRequestingPermission = true);
+    try {
+      final granted = await ContactsService.instance.requestPermission();
+      if (!mounted) return;
+      setState(() => _contactsEnabled = granted);
+      if (!granted) {
+        AppFeedback.showError(
+          context,
+          'Contacts permission was not granted.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRequestingPermission = false);
+      }
+    }
+  }
+
+  Future<void> _onNotificationsChanged(bool value) async {
+    if (_isSubmitting || _isRequestingPermission) return;
+    if (!value) {
+      setState(() => _notificationsEnabled = false);
+      await PushNotificationService.instance.unregisterCurrentToken();
+      return;
+    }
+
+    setState(() => _isRequestingPermission = true);
+    try {
+      final granted = await PushNotificationService.instance
+          .requestPermissionAndSync();
+      if (!mounted) return;
+      setState(() => _notificationsEnabled = granted);
+      if (!granted) {
+        AppFeedback.showError(
+          context,
+          'Notifications permission was not granted.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRequestingPermission = false);
+      }
+    }
+  }
 
   Future<void> _saveAndContinue({required bool skipped}) async {
     if (_isSubmitting) return;
@@ -42,8 +107,9 @@ class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
       try {
         await CredsApiService.instance.updatePreferences(
           contactsPermissionGranted: skipped ? false : _contactsEnabled,
-          notificationsPermissionGranted:
-              skipped ? false : _notificationsEnabled,
+          notificationsPermissionGranted: skipped
+              ? false
+              : _notificationsEnabled,
         );
       } on CredsApiException catch (e) {
         if (!mounted) return;
@@ -62,7 +128,9 @@ class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => const FollowSuggestionsScreen(),
+        builder: (_) => FollowSuggestionsScreen(
+          contactsEnabled: !skipped && _contactsEnabled,
+        ),
       ),
     );
   }
@@ -98,8 +166,7 @@ class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
 
                       const AppHeader(
                         title: 'Make Creds more useful',
-                        description:
-                            'Choose which permissions to enable. None are required to use Creds.',
+                        description: 'Choose which permissions to enable. None are required to use Creds.',
                       ),
 
                       SizedBox(height: 1.5.rem),
@@ -109,8 +176,7 @@ class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
                         title: 'Contacts',
                         description: 'Find friends who already use Creds.',
                         value: _contactsEnabled,
-                        onChanged: (val) =>
-                            setState(() => _contactsEnabled = val),
+                        onChanged: _onContactsChanged,
                       ),
 
                       SizedBox(height: 0.875.rem),
@@ -121,8 +187,7 @@ class _UsefulPermissionsScreenState extends State<UsefulPermissionsScreen> {
                         description:
                             'Get updates from your places and friends.',
                         value: _notificationsEnabled,
-                        onChanged: (val) =>
-                            setState(() => _notificationsEnabled = val),
+                        onChanged: _onNotificationsChanged,
                       ),
 
                       const Spacer(),

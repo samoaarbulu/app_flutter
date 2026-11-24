@@ -244,7 +244,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
     AppFeedback.showSuccess(
       context,
-      'Actividades guardadas (${selectedList.length})',
+      'Activities saved (${selectedList.length})',
     );
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const YourPlacesScreen()),
@@ -280,7 +280,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      AppFeedback.showError(context, 'Error al guardar actividades: $e');
+      AppFeedback.showError(context, 'Could not save activities: $e');
     }
   }
 

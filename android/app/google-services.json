@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "99373295102-p1tjr3vmfcnbm3oc1iifpdomtbmot533.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.getcreds.app",
+            "certificate_hash": "9ca11dfb63593db7499782cade8fbcbd1b563dd9"
+          }
+        },
+        {
           "client_id": "99373295102-a5ttjjtdo098s3fluo0hh27fl9d28bp8.apps.googleusercontent.com",
           "client_type": 3
         }

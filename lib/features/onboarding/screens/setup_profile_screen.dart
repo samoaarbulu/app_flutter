@@ -300,7 +300,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      AppFeedback.showError(context, 'Error al guardar el perfil: $e');
+      AppFeedback.showError(context, 'Could not save profile: $e');
     }
   }
 

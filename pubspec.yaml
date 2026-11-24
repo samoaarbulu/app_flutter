@@ -40,6 +40,7 @@ dependencies:
   # Firebase y Autenticación con Google
   firebase_core: ^3.12.1
   firebase_auth: ^5.5.1
+  firebase_messaging: ^15.2.4
   google_sign_in: ^6.2.2
   image_picker: ^1.2.4
   flutter_contacts: ^1.1.9+2

@@ -8,6 +8,7 @@ import '../../features/home/models/home_feed_item.dart';
 import '../../features/onboarding/models/onboarding_place.dart';
 import '../config/app_config.dart';
 import 'media_service.dart';
+import 'push_notification_service.dart';
 
 /// Excepción tipada para errores al comunicarse con CREDS Core API (`/v1`).
 class CredsApiException implements Exception {
@@ -260,6 +261,9 @@ class CredsApiService {
     _refreshToken = refreshToken;
     if (user != null) {
       _currentUser = user;
+    }
+    if ((user ?? _currentUser)?.profileCompleted == true) {
+      unawaited(PushNotificationService.instance.syncTokenWithBackend());
     }
   }
 
@@ -586,6 +590,57 @@ class CredsApiService {
     final profile = CredsUserProfile.fromJson(json);
     _currentUser = profile;
     return profile;
+  }
+
+  /// `POST /v1/users/me/devices`
+  /// Registra o actualiza el `fcmToken` del dispositivo actual en el backend.
+  Future<void> registerDeviceToken({
+    required String fcmToken,
+    String? deviceName,
+  }) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para registrar dispositivo.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    final body = <String, dynamic>{
+      'fcmToken': fcmToken,
+    };
+    if (_devicePlatform == 'ios' || _devicePlatform == 'android') {
+      body['platform'] = _devicePlatform;
+    }
+    if (deviceName != null && deviceName.trim().isNotEmpty) {
+      body['deviceName'] = deviceName.trim();
+    }
+
+    await _sendJson(
+      method: 'POST',
+      path: '/users/me/devices',
+      requiresAuth: true,
+      body: body,
+    );
+  }
+
+  /// `DELETE /v1/users/me/devices`
+  /// Desvincula el `fcmToken` del dispositivo (logout o al desactivar push).
+  Future<void> unregisterDeviceToken({required String fcmToken}) async {
+    if (!hasSession) {
+      throw const CredsApiException(
+        statusCode: 401,
+        message: 'Sin sesión activa para desvincular dispositivo.',
+        isNetworkOrOfflineError: true,
+      );
+    }
+
+    await _sendJson(
+      method: 'DELETE',
+      path: '/users/me/devices',
+      requiresAuth: true,
+      body: {'fcmToken': fcmToken},
+    );
   }
 
   // ---------------------------------------------------------------------------

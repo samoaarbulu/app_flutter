@@ -298,7 +298,11 @@ class _HomeScreenState extends State<HomeScreen> {
           return item.copyWith(isBookmarked: false);
         }).toList();
       });
-      AppFeedback.show(context, '${target.placeName} removed from favorites');
+      AppFeedback.show(
+        context,
+        '${target.placeName} removed from favorites',
+        preferBottom: true,
+      );
       return;
     }
 
@@ -318,6 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
       target.isBookmarked
           ? '${target.placeName} updated in ${result.listName}'
           : '${target.placeName} saved to ${result.listName}',
+      preferBottom: true,
     );
   }
 
@@ -332,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      AppFeedback.showError(context, 'No se pudo cerrar sesión: $e');
+      AppFeedback.showError(context, 'Could not sign out: $e');
       setState(() => _isSigningOut = false);
     }
   }

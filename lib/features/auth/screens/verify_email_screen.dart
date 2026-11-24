@@ -53,7 +53,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     if (_enteredCode.length < 6) {
       AppFeedback.showError(
         context,
-        'Por favor completa el código de 6 dígitos',
+        'Please enter the 6-digit code',
       );
       return;
     }
@@ -98,7 +98,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      AppFeedback.showError(context, 'Error al verificar código: $e');
+      AppFeedback.showError(context, 'Could not verify code: $e');
     }
   }
 
@@ -113,19 +113,19 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       if (!mounted) return;
       AppFeedback.showSuccess(
         context,
-        'Nuevo código enviado a ${widget.email}',
+        'New code sent to ${widget.email}',
       );
     } on CredsApiException catch (e) {
       if (!mounted) return;
       if (e.isNetworkOrOfflineError &&
           CredsApiService.instance.offlineFallbackEnabled) {
-        AppFeedback.show(context, 'Nuevo código enviado a ${widget.email}');
+        AppFeedback.show(context, 'New code sent to ${widget.email}');
         return;
       }
       AppFeedback.showError(context, e.message);
     } catch (e) {
       if (!mounted) return;
-      AppFeedback.showError(context, 'No se pudo reenviar el código: $e');
+      AppFeedback.showError(context, 'Could not resend code: $e');
     }
   }
 

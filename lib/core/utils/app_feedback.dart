@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
 /// Servicio global para desplegar alertas y notificaciones (SnackBars)
-/// centralizando estilos, duración y comportamiento en un solo lugar.
+/// posicionadas en la zona superior (debajo del AppBar) para no tapar
+/// los botones de acción inferiores.
 abstract final class AppFeedback {
-  /// Despliega un mensaje informativo estándar flotante
+  /// Despliega un mensaje informativo estándar.
   static void show(
     BuildContext context,
     String message, {
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(milliseconds: 2000),
+    bool preferBottom = false,
   }) {
     _displaySnackBar(
       context,
@@ -17,14 +20,16 @@ abstract final class AppFeedback {
       backgroundColor: AppColors.primaryAction,
       textColor: AppColors.onPrimary,
       duration: duration,
+      preferBottom: preferBottom,
     );
   }
 
-  /// Despliega un mensaje de éxito con icono de confirmación
+  /// Despliega un mensaje de éxito con icono de confirmación.
   static void showSuccess(
     BuildContext context,
     String message, {
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(milliseconds: 2000),
+    bool preferBottom = false,
   }) {
     _displaySnackBar(
       context,
@@ -33,14 +38,16 @@ abstract final class AppFeedback {
       textColor: Colors.white,
       icon: Icons.check_circle_rounded,
       duration: duration,
+      preferBottom: preferBottom,
     );
   }
 
-  /// Despliega un mensaje de error con icono de alerta
+  /// Despliega un mensaje de error con icono de alerta.
   static void showError(
     BuildContext context,
     String message, {
-    Duration duration = const Duration(seconds: 4),
+    Duration duration = const Duration(milliseconds: 3000),
+    bool preferBottom = false,
   }) {
     _displaySnackBar(
       context,
@@ -49,6 +56,7 @@ abstract final class AppFeedback {
       textColor: Colors.white,
       icon: Icons.error_rounded,
       duration: duration,
+      preferBottom: preferBottom,
     );
   }
 
@@ -59,9 +67,21 @@ abstract final class AppFeedback {
     required Color textColor,
     IconData? icon,
     required Duration duration,
+    bool preferBottom = false,
   }) {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+    if (scaffoldMessenger == null) return;
+
     scaffoldMessenger.hideCurrentSnackBar();
+
+    final hasFab =
+        preferBottom || (Scaffold.maybeOf(context)?.hasFloatingActionButton ?? false);
+    final mediaQuery = MediaQuery.maybeOf(context);
+    final screenHeight = mediaQuery?.size.height ?? 0;
+    final topInset = mediaQuery?.padding.top ?? 0;
+    final double bottomMargin = (!hasFab && screenHeight > 300)
+        ? (screenHeight - topInset - 140).clamp(16.0, screenHeight)
+        : 16.0;
 
     scaffoldMessenger.showSnackBar(
       SnackBar(
@@ -86,13 +106,11 @@ abstract final class AppFeedback {
         backgroundColor: backgroundColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        dismissDirection: DismissDirection.horizontal,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomMargin),
         elevation: 4,
       ),
     );
   }
 }
-

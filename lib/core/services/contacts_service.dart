@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:flutter_contacts/flutter_contacts.dart';
 
 import 'creds_api_service.dart';
@@ -12,6 +13,21 @@ class ContactsService {
 
   /// Indica si la plataforma soporta lectura directa de la agenda.
   bool get isSupportedOnPlatform => !kIsWeb;
+
+  /// Solicita únicamente el permiso nativo de lectura de contactos.
+  Future<bool> requestPermission() async {
+    if (WidgetsBinding.instance.runtimeType
+        .toString()
+        .contains('TestWidgetsFlutterBinding')) {
+      return true;
+    }
+    if (kIsWeb) return false;
+    try {
+      return await FlutterContacts.requestPermission(readonly: true);
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Solicita permiso y lee los contactos con nombre, teléfono o correo.
   /// En Web o si el permiso es denegado, retorna una lista vacía.

@@ -23,11 +23,7 @@ class SignInScreen extends StatefulWidget {
   final VoidCallback? onSignUp;
   final ValueChanged<String>? onSignedIn;
 
-  const SignInScreen({
-    super.key,
-    this.onSignUp,
-    this.onSignedIn,
-  });
+  const SignInScreen({super.key, this.onSignUp, this.onSignedIn});
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -92,10 +88,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Future<void> _handleSignIn() async {
     if (!_isFormValid) {
-      AppFeedback.showError(
-        context,
-        'Por favor verifica tu correo y contraseña',
-      );
+      AppFeedback.showError(context, 'Please check your email and password');
       return;
     }
 
@@ -143,7 +136,7 @@ class _SignInScreenState extends State<SignInScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      AppFeedback.showError(context, 'Error al iniciar sesión: $e');
+      AppFeedback.showError(context, 'Sign-in failed: $e');
     }
   }
 
@@ -167,10 +160,7 @@ class _SignInScreenState extends State<SignInScreen> {
       AppFeedback.showError(context, e.message);
     } catch (e) {
       if (!mounted) return;
-      AppFeedback.showError(
-        context,
-        'Error al iniciar sesión con Google: $e',
-      );
+      AppFeedback.showError(context, 'Google sign-in failed: $e');
     } finally {
       if (mounted) {
         setState(() => _isGoogleLoading = false);
@@ -198,8 +188,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
                       const AppHeader(
                         title: 'Sign in',
-                        description:
-                            'See your rankings, saved places, and what your people are up to.',
+                        description: 'See your rankings, saved places, and what your people are up to.',
                       ),
 
                       SizedBox(height: 1.75.rem),
@@ -248,7 +237,9 @@ class _SignInScreenState extends State<SignInScreen> {
 
                       Row(
                         children: [
-                          const Expanded(child: Divider(color: AppColors.border)),
+                          const Expanded(
+                            child: Divider(color: AppColors.border),
+                          ),
                           Padding(
                             padding: EdgeInsets.symmetric(horizontal: 0.75.rem),
                             child: Text(
@@ -259,7 +250,9 @@ class _SignInScreenState extends State<SignInScreen> {
                               ),
                             ),
                           ),
-                          const Expanded(child: Divider(color: AppColors.border)),
+                          const Expanded(
+                            child: Divider(color: AppColors.border),
+                          ),
                         ],
                       ),
 
@@ -270,7 +263,9 @@ class _SignInScreenState extends State<SignInScreen> {
                         variant: AppButtonVariant.outline,
                         isLoading: _isGoogleLoading,
                         icon: const AppGoogleIcon(size: 20),
-                        onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
+                        onPressed: _isGoogleLoading
+                            ? null
+                            : _handleGoogleSignIn,
                       ),
 
                       SizedBox(height: 1.0.rem),
@@ -285,7 +280,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                         onPressed: () => AppFeedback.show(
                           context,
-                          'Continue with Apple disponible en iOS',
+                          'Continue with Apple is available on iOS',
                         ),
                       ),
 
@@ -297,8 +292,9 @@ class _SignInScreenState extends State<SignInScreen> {
                         text: 'Sign in',
                         variant: AppButtonVariant.primary,
                         isLoading: _isLoading,
-                        onPressed:
-                            (_isButtonEnabled && !_isLoading) ? _handleSignIn : null,
+                        onPressed: (_isButtonEnabled && !_isLoading)
+                            ? _handleSignIn
+                            : null,
                       ),
 
                       SizedBox(height: 1.0.rem),
@@ -307,7 +303,8 @@ class _SignInScreenState extends State<SignInScreen> {
                         child: AppLinkText(
                           prefixText: 'Don\'t have an account? ',
                           actionText: 'Sign up',
-                          onTap: widget.onSignUp ??
+                          onTap:
+                              widget.onSignUp ??
                               () {
                                 Navigator.of(context).pushReplacement(
                                   MaterialPageRoute(

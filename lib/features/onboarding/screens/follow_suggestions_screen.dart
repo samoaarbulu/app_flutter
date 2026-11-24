@@ -33,10 +33,12 @@ class _SuggestedPerson {
 /// Paso 10 del onboarding: sugerencias sociales (`02 Crear cuenta/10.png`).
 class FollowSuggestionsScreen extends StatefulWidget {
   final VoidCallback? onFinish;
+  final bool contactsEnabled;
 
   const FollowSuggestionsScreen({
     super.key,
     this.onFinish,
+    this.contactsEnabled = false,
   });
 
   @override
@@ -397,6 +399,7 @@ class _FollowSuggestionsScreenState extends State<FollowSuggestionsScreen> {
                       child: _SegmentTab(
                         label: 'Invite contacts',
                         isSelected: _selectedTab == 1,
+                        isEnabled: widget.contactsEnabled,
                         onTap: () => setState(() => _selectedTab = 1),
                       ),
                     ),
@@ -685,32 +688,41 @@ class _FollowSuggestionsScreenState extends State<FollowSuggestionsScreen> {
 class _SegmentTab extends StatelessWidget {
   final String label;
   final bool isSelected;
+  final bool isEnabled;
   final VoidCallback onTap;
 
   const _SegmentTab({
     required this.label,
     required this.isSelected,
+    this.isEnabled = true,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 0.5625.rem),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(9.0),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 0.8125.rem,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color:
-                  isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+    final textColor = !isEnabled
+        ? AppColors.textMuted.withValues(alpha: 0.55)
+        : (isSelected ? AppColors.textPrimary : AppColors.textSecondary);
+
+    return IgnorePointer(
+      ignoring: !isEnabled,
+      child: GestureDetector(
+        onTap: isEnabled ? onTap : null,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 0.5625.rem),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(9.0),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 0.8125.rem,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: textColor,
+              ),
             ),
           ),
         ),
